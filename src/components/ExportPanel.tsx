@@ -74,13 +74,15 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ projectName, onClose, 
   const handleShareSubmit = (title: string, content: string) => {
     // 실제로는 공유 API 호출
     console.log('공유하기:', { title, content, projectName, quality, format });
-    alert(`제목: ${title}\n내용: ${content}\n\n공유 기능은 곧 구현됩니다`);
     setShowShareDialog(false);
+    // 공유 완료 후 메인화면으로 이동
+    onComplete();
   };
 
   const handleDownload = () => {
     // 실제로는 다운로드 기능 구현
-    alert('다운로드 기능은 곧 구현됩니다');
+    // 다운로드 완료 후 메인화면으로 이동
+    onComplete();
   };
 
   return (
@@ -108,7 +110,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ projectName, onClose, 
               className="p-6"
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-white">내보내기 설정</h3>
+                <h3 className="text-lg font-bold text-white">만들기 설정</h3>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={onClose}
@@ -180,7 +182,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ projectName, onClose, 
                 className="w-full py-4 rounded-xl bg-golf-green text-white font-semibold flex items-center justify-center gap-2"
               >
                 <Share2 className="w-5 h-5" />
-                내보내기 시작
+                만들기 시작
               </motion.button>
             </motion.div>
           )}
@@ -194,7 +196,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ projectName, onClose, 
               className="p-6"
             >
               <div className="text-center mb-8">
-                <h3 className="text-lg font-bold text-white mb-2">내보내는 중...</h3>
+                <h3 className="text-lg font-bold text-white mb-2">만드는 중...</h3>
                 <p className="text-sm text-gray-400">잠시만 기다려 주세요</p>
               </div>
 
@@ -272,7 +274,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ projectName, onClose, 
                 >
                   <Check className="w-10 h-10 text-golf-green" />
                 </motion.div>
-                <h3 className="text-xl font-bold text-white mb-2">내보내기 완료!</h3>
+                <h3 className="text-xl font-bold text-white mb-2">만들기 완료!</h3>
                 <p className="text-sm text-gray-400">영상이 성공적으로 저장되었습니다</p>
               </div>
 

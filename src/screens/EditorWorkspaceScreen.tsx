@@ -510,13 +510,17 @@ export const EditorWorkspaceScreen: React.FC = () => {
 
   return (
     <div className="relative flex flex-col h-full bg-gray-50">
+      {/* Status Bar Spacer - 모바일 상단 UI 영역 */}
+      <div className="flex-shrink-0 h-11 bg-white" />
+
       {/* Top Bar */}
-      <div className="bg-white border-b border-gray-200 px-4 safe-area-top">
-        <div className="flex items-center justify-between py-4">
-          <div className="flex items-center gap-3">
+      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4">
+        <div className="flex items-center justify-between py-3">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={handleBack}
+              className="flex-shrink-0 w-10 h-10 flex items-center justify-center -ml-2"
             >
               <ChevronLeft className="w-6 h-6 text-gray-900" />
             </motion.button>
@@ -527,13 +531,13 @@ export const EditorWorkspaceScreen: React.FC = () => {
                 onChange={(e) => setProjectTitle(e.target.value)}
                 onBlur={() => setIsEditingTitle(false)}
                 onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)}
-                className="px-3 py-1 bg-gray-100 border border-gray-300 rounded text-gray-900 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-golf-green"
+                className="flex-1 min-w-0 px-2 py-1 bg-gray-100 border border-gray-300 rounded text-gray-900 text-base font-bold focus:outline-none focus:ring-2 focus:ring-golf-green"
                 autoFocus
               />
             ) : (
-              <h1 
+              <h1
                 onClick={() => setIsEditingTitle(true)}
-                className="text-xl font-bold text-gray-900 cursor-pointer hover:text-golf-green transition-colors"
+                className="text-lg font-bold text-gray-900 cursor-pointer hover:text-golf-green transition-colors truncate"
               >
                 {projectTitle}
               </h1>
@@ -542,9 +546,9 @@ export const EditorWorkspaceScreen: React.FC = () => {
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleExport}
-            className="px-4 py-2 bg-golf-green rounded-lg hover:bg-golf-green/90 transition-colors"
+            className="flex-shrink-0 ml-3 px-4 py-2 bg-golf-green rounded-lg hover:bg-golf-green/90 transition-colors"
           >
-            <span className="text-sm font-semibold text-white">내보내기</span>
+            <span className="text-sm font-semibold text-white">만들기</span>
           </motion.button>
         </div>
       </div>
@@ -769,9 +773,13 @@ export const EditorWorkspaceScreen: React.FC = () => {
             onScroll={(e) => {
               const target = e.target as HTMLElement;
               setScrollOffset(target.scrollLeft);
-              // 좌측 여백을 고려하여 실제 타임라인 시간 계산
-              const actualTimelinePosition = target.scrollLeft - leftPadding;
-              setCurrentTime(actualTimelinePosition / (TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom));
+              // 중앙 플레이헤드 위치 기준으로 실제 타임라인 시간 계산
+              const containerWidth = target.clientWidth;
+              const centerOffset = containerWidth / 2;
+              const playheadPixelPosition = target.scrollLeft + centerOffset;
+              const actualTimelinePosition = playheadPixelPosition - leftPadding;
+              const time = actualTimelinePosition / (TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom);
+              setCurrentTime(Math.max(0, time));
             }}
             onClick={(e) => {
               // 빈 공간 클릭 시 선택 취소
