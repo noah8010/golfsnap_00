@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Play, ChevronLeft } from 'lucide-react';
+import { X, Check, Play, ChevronLeft, Info } from 'lucide-react';
 import { MediaItem, AspectRatio } from '../types/golf';
 import { useTouchScroll } from '../hooks/useTouchScroll';
 
@@ -12,8 +12,19 @@ interface NewProjectStep2ScreenProps {
   isShareMode?: boolean;
 }
 
-// Mock 미디어 데이터
-const mockMediaItems: MediaItem[] = [
+// 확장된 미디어 아이템 타입 (날짜, 메타데이터 포함)
+interface ExtendedMediaItem extends MediaItem {
+  createdAt: Date;
+  hasMetadata: boolean;
+  metadata?: {
+    clubType?: string;
+    swingSpeed?: number;
+    location?: string;
+  };
+}
+
+// Mock 미디어 데이터 (날짜, 메타데이터 포함)
+const mockMediaItems: ExtendedMediaItem[] = [
   {
     id: 'media-1',
     type: 'video',
@@ -22,6 +33,13 @@ const mockMediaItems: MediaItem[] = [
     duration: 15,
     width: 1920,
     height: 1080,
+    createdAt: new Date('2026-01-30T14:30:00'),
+    hasMetadata: true,
+    metadata: {
+      clubType: '드라이버',
+      swingSpeed: 105,
+      location: '남서울CC',
+    },
   },
   {
     id: 'media-2',
@@ -30,6 +48,8 @@ const mockMediaItems: MediaItem[] = [
     thumbnail: 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=400&h=400&fit=crop',
     width: 1920,
     height: 1080,
+    createdAt: new Date('2026-01-30T10:15:00'),
+    hasMetadata: false,
   },
   {
     id: 'media-3',
@@ -39,6 +59,13 @@ const mockMediaItems: MediaItem[] = [
     duration: 22,
     width: 1920,
     height: 1080,
+    createdAt: new Date('2026-01-29T16:45:00'),
+    hasMetadata: true,
+    metadata: {
+      clubType: '7번 아이언',
+      swingSpeed: 85,
+      location: '용인CC',
+    },
   },
   {
     id: 'media-4',
@@ -47,6 +74,12 @@ const mockMediaItems: MediaItem[] = [
     thumbnail: 'https://images.unsplash.com/photo-1596727362302-b8d891c42ab8?w=400&h=400&fit=crop',
     width: 1920,
     height: 1080,
+    createdAt: new Date('2026-01-29T14:20:00'),
+    hasMetadata: true,
+    metadata: {
+      clubType: '퍼터',
+      location: '용인CC',
+    },
   },
   {
     id: 'media-5',
@@ -56,6 +89,8 @@ const mockMediaItems: MediaItem[] = [
     duration: 18,
     width: 1920,
     height: 1080,
+    createdAt: new Date('2026-01-28T09:30:00'),
+    hasMetadata: false,
   },
   {
     id: 'media-6',
@@ -64,6 +99,8 @@ const mockMediaItems: MediaItem[] = [
     thumbnail: 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=400&h=400&fit=crop',
     width: 1920,
     height: 1080,
+    createdAt: new Date('2026-01-27T11:00:00'),
+    hasMetadata: false,
   },
   {
     id: 'media-7',
@@ -73,6 +110,13 @@ const mockMediaItems: MediaItem[] = [
     duration: 12,
     width: 1920,
     height: 1080,
+    createdAt: new Date('2026-01-25T15:45:00'),
+    hasMetadata: true,
+    metadata: {
+      clubType: '드라이버',
+      swingSpeed: 110,
+      location: '파주CC',
+    },
   },
   {
     id: 'media-8',
@@ -81,6 +125,8 @@ const mockMediaItems: MediaItem[] = [
     thumbnail: 'https://images.unsplash.com/photo-1593111774240-d529f12399b8?w=400&h=400&fit=crop',
     width: 1920,
     height: 1080,
+    createdAt: new Date('2026-01-20T08:30:00'),
+    hasMetadata: false,
   },
   {
     id: 'media-9',
@@ -90,8 +136,53 @@ const mockMediaItems: MediaItem[] = [
     duration: 25,
     width: 1920,
     height: 1080,
+    createdAt: new Date('2026-01-15T17:20:00'),
+    hasMetadata: true,
+    metadata: {
+      clubType: '5번 우드',
+      swingSpeed: 95,
+      location: '안양CC',
+    },
   },
 ];
+
+// 날짜 포맷팅 함수
+const formatDateHeader = (date: Date): string => {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const isToday = date.toDateString() === today.toDateString();
+  const isYesterday = date.toDateString() === yesterday.toDateString();
+
+  if (isToday) return '오늘';
+  if (isYesterday) return '어제';
+
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+  const weekday = weekdays[date.getDay()];
+
+  return `${month}월 ${day}일 (${weekday})`;
+};
+
+// 날짜별로 그룹화하는 함수
+const groupByDate = (items: ExtendedMediaItem[]): Map<string, ExtendedMediaItem[]> => {
+  const groups = new Map<string, ExtendedMediaItem[]>();
+
+  // 날짜 기준 내림차순 정렬 (최신순)
+  const sorted = [...items].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+  sorted.forEach((item) => {
+    const dateKey = item.createdAt.toDateString();
+    if (!groups.has(dateKey)) {
+      groups.set(dateKey, []);
+    }
+    groups.get(dateKey)!.push(item);
+  });
+
+  return groups;
+};
 
 export const NewProjectStep2Screen: React.FC<NewProjectStep2ScreenProps> = ({
   aspectRatio,
@@ -101,16 +192,20 @@ export const NewProjectStep2Screen: React.FC<NewProjectStep2ScreenProps> = ({
   isShareMode = false,
 }) => {
   const [selectedTab, setSelectedTab] = useState<'all' | 'video' | 'image'>('all');
-  const [selectedMedia, setSelectedMedia] = useState<MediaItem[]>([]);
+  const [selectedMedia, setSelectedMedia] = useState<ExtendedMediaItem[]>([]);
   const [showEditModeDialog, setShowEditModeDialog] = useState(false);
   const scrollRef = useTouchScroll<HTMLDivElement>();
 
-  const filteredMedia = mockMediaItems.filter((item) => {
-    if (selectedTab === 'all') return true;
-    return item.type === selectedTab;
-  });
+  // 필터링 및 그룹화된 미디어
+  const groupedMedia = useMemo(() => {
+    const filtered = mockMediaItems.filter((item) => {
+      if (selectedTab === 'all') return true;
+      return item.type === selectedTab;
+    });
+    return groupByDate(filtered);
+  }, [selectedTab]);
 
-  const toggleMediaSelection = (media: MediaItem) => {
+  const toggleMediaSelection = (media: ExtendedMediaItem) => {
     const index = selectedMedia.findIndex((m) => m.id === media.id);
     if (index >= 0) {
       setSelectedMedia(selectedMedia.filter((m) => m.id !== media.id));
@@ -150,18 +245,21 @@ export const NewProjectStep2Screen: React.FC<NewProjectStep2ScreenProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-white">
+      {/* Status Bar Spacer - 모바일 상단 UI 영역 */}
+      <div className="flex-shrink-0 h-11 bg-white" />
+
       {/* Header */}
-      <div className="border-b border-gray-200 safe-area-top">
-        <div className="flex items-center justify-between px-4 py-4">
+      <div className="flex-shrink-0 border-b border-gray-200">
+        <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={onBack}
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100"
+              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 -ml-2"
             >
               <ChevronLeft className="w-6 h-6 text-gray-600" />
             </motion.button>
-            <h1 className="text-xl font-bold text-gray-900">미디어 선택</h1>
+            <h1 className="text-lg font-bold text-gray-900">미디어 선택</h1>
           </div>
           <motion.button
             whileTap={{ scale: 0.9 }}
@@ -195,76 +293,110 @@ export const NewProjectStep2Screen: React.FC<NewProjectStep2ScreenProps> = ({
         </div>
       </div>
 
-      {/* Media Grid */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide touch-scroll px-4 py-4">
-        <div className="grid grid-cols-3 gap-2">
-          {filteredMedia.map((media) => {
-            const selectionOrder = getSelectionOrder(media.id);
-            const isSelected = selectionOrder !== null;
+      {/* Media Grid - 날짜별 그룹화 */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide touch-scroll">
+        {Array.from(groupedMedia.entries()).map(([dateKey, items]) => (
+          <div key={dateKey} className="mb-2">
+            {/* 날짜 헤더 */}
+            <div className="sticky top-0 bg-gray-50 px-4 py-2 z-10">
+              <span className="text-sm font-semibold text-gray-700">
+                {formatDateHeader(items[0].createdAt)}
+              </span>
+              <span className="text-xs text-gray-400 ml-2">
+                {items.length}개
+              </span>
+            </div>
 
-            return (
-              <motion.button
-                key={media.id}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => toggleMediaSelection(media)}
-                className="relative aspect-square rounded-lg overflow-hidden bg-gray-200"
-              >
-                {/* Thumbnail */}
-                <img
-                  src={media.thumbnail}
-                  alt=""
-                  className={`w-full h-full object-cover transition-opacity ${
-                    isSelected ? 'opacity-50' : 'opacity-100'
-                  }`}
-                />
+            {/* 미디어 그리드 */}
+            <div className="grid grid-cols-3 gap-0.5 px-0.5">
+              {items.map((media) => {
+                const selectionOrder = getSelectionOrder(media.id);
+                const isSelected = selectionOrder !== null;
 
-                {/* Video Duration */}
-                {media.type === 'video' && media.duration && (
-                  <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/70 rounded text-xs text-white flex items-center gap-1">
-                    <Play className="w-3 h-3" fill="currentColor" />
-                    {formatDuration(media.duration)}
-                  </div>
-                )}
+                return (
+                  <motion.button
+                    key={media.id}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => toggleMediaSelection(media)}
+                    className="relative aspect-square overflow-hidden bg-gray-200"
+                  >
+                    {/* Thumbnail */}
+                    <img
+                      src={media.thumbnail}
+                      alt=""
+                      className={`w-full h-full object-cover transition-opacity ${
+                        isSelected ? 'opacity-60' : 'opacity-100'
+                      }`}
+                    />
 
-                {/* Selection Overlay */}
-                <AnimatePresence>
-                  {isSelected && (
-                    <>
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-blue-500/30 border-2 border-blue-500"
-                      />
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 0 }}
-                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold shadow-lg"
-                      >
-                        {selectionOrder}
-                      </motion.div>
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 0 }}
-                        className="absolute top-2 left-2"
-                      >
-                        <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
-                          <Check className="w-4 h-4 text-white" strokeWidth={3} />
-                        </div>
-                      </motion.div>
-                    </>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-            );
-          })}
+                    {/* 메타데이터 마크 (좌측 하단) */}
+                    {media.hasMetadata && (
+                      <div className="absolute bottom-1.5 left-1.5 w-5 h-5 rounded-full bg-golf-green flex items-center justify-center shadow-lg">
+                        <Info className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+
+                    {/* Video Duration (우측 하단) */}
+                    {media.type === 'video' && media.duration && (
+                      <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 bg-black/70 rounded text-xs text-white flex items-center gap-1">
+                        <Play className="w-2.5 h-2.5" fill="currentColor" />
+                        {formatDuration(media.duration)}
+                      </div>
+                    )}
+
+                    {/* Selection Overlay */}
+                    <AnimatePresence>
+                      {isSelected && (
+                        <>
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-blue-500/30 border-2 border-blue-500"
+                          />
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0 }}
+                            className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold shadow-lg"
+                          >
+                            {selectionOrder}
+                          </motion.div>
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0 }}
+                            className="absolute top-1.5 left-1.5"
+                          >
+                            <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
+                              <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                            </div>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 메타데이터 범례 */}
+      <div className="flex-shrink-0 px-4 py-2 bg-gray-50 border-t border-gray-100">
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="flex items-center gap-1">
+            <div className="w-4 h-4 rounded-full bg-golf-green flex items-center justify-center">
+              <Info className="w-2.5 h-2.5 text-white" />
+            </div>
+            <span>스윙 분석 데이터 포함</span>
+          </div>
         </div>
       </div>
 
       {/* Bottom Action */}
-      <div className="px-4 py-6 border-t border-gray-200 safe-area-bottom">
+      <div className="flex-shrink-0 px-4 py-4 border-t border-gray-200 bg-white">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm text-gray-600">
             {selectedMedia.length > 0 ? `${selectedMedia.length}개 선택됨` : '미디어를 선택하세요'}

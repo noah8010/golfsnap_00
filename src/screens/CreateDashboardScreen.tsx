@@ -104,17 +104,20 @@ export const CreateDashboardScreen: React.FC = () => {
 
   return (
     <div className="relative flex flex-col h-full bg-gray-50">
+      {/* Status Bar Spacer - 모바일 상단 UI 영역 */}
+      <div className="flex-shrink-0 h-11 bg-white" />
+
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 safe-area-top">
-        <div className="flex items-center gap-3 py-4">
+      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4">
+        <div className="flex items-center gap-2 py-3">
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => setCurrentScreen('home')}
-            className="w-9 h-9 flex items-center justify-center"
+            className="w-10 h-10 flex items-center justify-center -ml-2"
           >
             <ChevronLeft className="w-6 h-6 text-gray-900" />
           </motion.button>
-          <h1 className="text-xl font-bold text-gray-900">만들기</h1>
+          <h1 className="text-lg font-bold text-gray-900">만들기</h1>
         </div>
       </div>
 

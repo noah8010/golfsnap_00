@@ -47,9 +47,12 @@ export const NewProjectStep1Screen: React.FC<NewProjectStep1ScreenProps> = ({ on
 
   return (
     <div className="flex flex-col h-full bg-white">
+      {/* Status Bar Spacer - 모바일 상단 UI 영역 */}
+      <div className="flex-shrink-0 h-11 bg-white" />
+
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 safe-area-top">
-        <h1 className="text-xl font-bold text-gray-900">화면 비율 선택</h1>
+      <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-200">
+        <h1 className="text-lg font-bold text-gray-900">화면 비율 선택</h1>
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={onClose}
