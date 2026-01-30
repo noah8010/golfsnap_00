@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft,
@@ -20,6 +20,7 @@ import { TextPanel, TextSettings } from '../components/TextPanel';
 import { StickerPanel, StickerSettings } from '../components/StickerPanel';
 import { ExportPanel } from '../components/ExportPanel';
 import { TimelineClip } from '../components/TimelineClip';
+import { DraggableOverlay } from '../components/DraggableOverlay';
 import { useTimeline } from '../hooks/useTimeline';
 import { usePinchZoom } from '../hooks/usePinchZoom';
 import { TIMELINE_CONFIG, INITIAL_TIMELINE_CLIPS } from '../constants/editor';
@@ -37,6 +38,7 @@ import { TIMELINE_CONFIG, INITIAL_TIMELINE_CLIPS } from '../constants/editor';
 export const EditorWorkspaceScreen: React.FC = () => {
   const { currentProject, setCurrentScreen } = useAppStore();
   const timelineRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
 
   // ============================================
   // Timeline 상태 관리
@@ -141,6 +143,24 @@ export const EditorWorkspaceScreen: React.FC = () => {
   const handlePlayPause = () => setIsPlaying(!isPlaying);
   const handleBack = () => setCurrentScreen('create');
   const handleExport = () => setShowExportPanel(true);
+
+  // ============================================
+  // 오버레이 위치 변경 핸들러
+  // ============================================
+  const handleOverlayPositionChange = useCallback((clipId: string, x: number, y: number) => {
+    const clip = timelineClips.find((c) => c.id === clipId);
+    if (!clip) return;
+
+    if (clip.track === 'text') {
+      updateClip(clipId, {
+        textPosition: { x, y },
+      });
+    } else if (clip.track === 'sticker') {
+      updateClip(clipId, {
+        stickerPosition: { x, y },
+      });
+    }
+  }, [timelineClips, updateClip]);
 
   // ============================================
   // 클립 조작 핸들러
@@ -557,6 +577,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
       <div className="flex-shrink-0 bg-gray-900 relative" style={{ height: '45%' }}>
         <div className="absolute inset-0 flex items-center justify-center p-6">
           <div
+            ref={previewRef}
             className="relative shadow-2xl overflow-hidden"
             style={{
               aspectRatio:
@@ -606,7 +627,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
               </motion.button>
             </div>
 
-            {/* 텍스트 오버레이 */}
+            {/* 텍스트 오버레이 (드래그 가능) */}
             {timelineClips
               .filter((clip) => clip.track === 'text')
               .filter((clip) =>
@@ -614,32 +635,19 @@ export const EditorWorkspaceScreen: React.FC = () => {
                 currentTime < clip.position + clip.duration
               )
               .map((clip) => (
-                <motion.div
+                <DraggableOverlay
                   key={clip.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="absolute pointer-events-none"
-                  style={{
-                    left: `${clip.textPosition?.x}%`,
-                    top: `${clip.textPosition?.y}%`,
-                    transform: 'translate(-50%, -50%)',
-                    fontSize: `${(clip.textFontSize || 32) / 2}px`,
-                    color: clip.textColor || '#FFFFFF',
-                    fontWeight: clip.textBold ? 'bold' : 'normal',
-                    fontStyle: clip.textItalic ? 'italic' : 'normal',
-                    textDecoration: clip.textUnderline ? 'underline' : 'none',
-                    textAlign: clip.textAlign || 'center',
-                    textShadow: '0 2px 4px rgba(0,0,0,0.8)',
-                    maxWidth: '80%',
-                    wordBreak: 'keep-all',
-                  }}
-                >
-                  {clip.textContent}
-                </motion.div>
+                  clip={clip}
+                  type="text"
+                  containerRef={previewRef}
+                  onPositionChange={handleOverlayPositionChange}
+                  isSelected={selectedClipId === clip.id}
+                  onSelect={setSelectedClipId}
+                />
               ))
             }
 
-            {/* 스티커 오버레이 */}
+            {/* 스티커 오버레이 (드래그 가능) */}
             {timelineClips
               .filter((clip) => clip.track === 'sticker')
               .filter((clip) =>
@@ -647,49 +655,15 @@ export const EditorWorkspaceScreen: React.FC = () => {
                 currentTime < clip.position + clip.duration
               )
               .map((clip) => (
-                <motion.div
+                <DraggableOverlay
                   key={clip.id}
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{
-                    opacity: 1,
-                    scale: clip.stickerScale || 1,
-                    ...(clip.stickerAnimation === 'bounce' && {
-                      y: [0, -10, 0],
-                      transition: { repeat: Infinity, duration: 0.6 }
-                    }),
-                    ...(clip.stickerAnimation === 'pulse' && {
-                      scale: [(clip.stickerScale || 1), (clip.stickerScale || 1) * 1.2, (clip.stickerScale || 1)],
-                      transition: { repeat: Infinity, duration: 0.8 }
-                    }),
-                    ...(clip.stickerAnimation === 'shake' && {
-                      x: [-2, 2, -2, 2, 0],
-                      transition: { repeat: Infinity, duration: 0.4 }
-                    }),
-                    ...(clip.stickerAnimation === 'spin' && {
-                      rotate: [0, 360],
-                      transition: { repeat: Infinity, duration: 2, ease: 'linear' }
-                    }),
-                    ...(clip.stickerAnimation === 'float' && {
-                      y: [0, -5, 0],
-                      transition: { repeat: Infinity, duration: 2, ease: 'easeInOut' }
-                    }),
-                    ...(clip.stickerAnimation === 'sparkle' && {
-                      opacity: [1, 0.5, 1],
-                      scale: [(clip.stickerScale || 1), (clip.stickerScale || 1) * 1.1, (clip.stickerScale || 1)],
-                      transition: { repeat: Infinity, duration: 0.8 }
-                    }),
-                  }}
-                  className="absolute pointer-events-none"
-                  style={{
-                    left: `${clip.stickerPosition?.x || 50}%`,
-                    top: `${clip.stickerPosition?.y || 50}%`,
-                    transform: 'translate(-50%, -50%)',
-                    fontSize: `${32 * (clip.stickerScale || 1)}px`,
-                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
-                  }}
-                >
-                  {clip.stickerEmoji}
-                </motion.div>
+                  clip={clip}
+                  type="sticker"
+                  containerRef={previewRef}
+                  onPositionChange={handleOverlayPositionChange}
+                  isSelected={selectedClipId === clip.id}
+                  onSelect={setSelectedClipId}
+                />
               ))
             }
 
