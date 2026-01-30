@@ -131,7 +131,6 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
 
   // 드래그 가능 상태 (시각적 피드백)
   const isDraggableActive = dragHook.isDraggable;
-  const longPressProgress = dragHook.longPressProgress;
 
   return (
     <motion.div

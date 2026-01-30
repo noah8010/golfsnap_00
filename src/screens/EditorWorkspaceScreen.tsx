@@ -49,7 +49,6 @@ export const EditorWorkspaceScreen: React.FC = () => {
     timelineClips,
     selectedClipId,
     selectedClip,
-    scrollOffset,
     setSelectedClipId,
     setScrollOffset,
     splitClip,
@@ -121,7 +120,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
   const MOBILE_TIMELINE_WIDTH = 393 - 64; // 모바일 너비 - 좌측 레이블(64px)
   
   // 스크롤 가능한 타임라인 너비 계산
-  const { scrollableWidth, scrollableDuration, leftPadding } = useMemo(() => {
+  const { scrollableWidth, leftPadding } = useMemo(() => {
     // 중앙 플레이헤드가 0초부터 마지막까지 모두 도달하려면
     // 좌우 양쪽에 화면 너비의 절반만큼 여백 필요
     const containerWidth = MOBILE_TIMELINE_WIDTH;
@@ -130,9 +129,8 @@ export const EditorWorkspaceScreen: React.FC = () => {
     const width = duration * TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom;
     const padding = paddingSeconds * TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom;
     
-    return { 
-      scrollableWidth: width, 
-      scrollableDuration: duration,
+    return {
+      scrollableWidth: width,
       leftPadding: padding
     };
   }, [totalDuration, timelineZoom]);

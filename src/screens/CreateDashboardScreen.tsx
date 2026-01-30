@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, UserCircle2, MoreVertical, Plus, Copy, Edit2, Trash2, Clock, ChevronLeft, Camera, Upload } from 'lucide-react';
+import { UserCircle2, MoreVertical, Plus, Copy, Edit2, Trash2, Clock, ChevronLeft, Camera, Upload } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { Project } from '../types/golf';
 import { useTouchScroll } from '../hooks/useTouchScroll';
 
 export const CreateDashboardScreen: React.FC = () => {
-  const { projects, addProject, updateProject, deleteProject, duplicateProject, setCurrentScreen, setCurrentProject, setShareMode } = useAppStore();
-  const [searchQuery, setSearchQuery] = useState('');
+  const { projects, updateProject, deleteProject, duplicateProject, setCurrentScreen, setCurrentProject, setShareMode } = useAppStore();
+  const [searchQuery] = useState('');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showBottomSheet, setShowBottomSheet] = useState(false);
   const [showRenameDialog, setShowRenameDialog] = useState(false);

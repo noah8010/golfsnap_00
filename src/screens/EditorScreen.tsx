@@ -15,7 +15,7 @@ import {
 import { useAppStore } from '../store/useAppStore';
 
 export const EditorScreen: React.FC = () => {
-  const { isPlaying, setIsPlaying, currentTime, setCurrentTime } = useAppStore();
+  const { isPlaying, setIsPlaying, currentTime } = useAppStore();
   const [selectedTool, setSelectedTool] = useState<'cut' | 'effect' | 'layer' | null>(
     null
   );
