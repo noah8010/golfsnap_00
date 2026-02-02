@@ -1,3 +1,12 @@
+/**
+ * @file NewProjectFlowScreen.tsx
+ * @description 새 프로젝트 생성 플로우 화면
+ *
+ * ## 플로우 구성
+ * - 편집 모드 (!isShareMode): 비율 선택 → 미디어 선택 → AI 처리
+ * - 공유 모드 (isShareMode): 미디어 선택 → 공유 다이얼로그 (비율 자동 설정)
+ */
+
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { NewProjectStep1Screen } from './NewProjectStep1Screen';
@@ -19,8 +28,9 @@ export const NewProjectFlowScreen: React.FC<NewProjectFlowScreenProps> = ({
   onClose,
   isShareMode = false,
 }) => {
-  const [currentStep, setCurrentStep] = useState<Step>(1);
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio | null>(null);
+  // 공유 모드에서는 비율 선택 건너뛰기 (기본 9:16)
+  const [currentStep, setCurrentStep] = useState<Step>(isShareMode ? 2 : 1);
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio | null>(isShareMode ? '9:16' : null);
   const [selectedMedia, setSelectedMedia] = useState<MediaItem[]>([]);
   const [showShareDialog, setShowShareDialog] = useState(false);
 
@@ -32,7 +42,10 @@ export const NewProjectFlowScreen: React.FC<NewProjectFlowScreenProps> = ({
   const handleStep2Next = (media: MediaItem[], switchToEditMode?: boolean) => {
     setSelectedMedia(media);
     if (switchToEditMode) {
-      // 편집 모드로 전환 - Step3로 이동
+      // 편집 모드로 전환 시 비율 선택 화면으로 (공유 모드에서 전환 시)
+      if (isShareMode && !aspectRatio) {
+        setAspectRatio('9:16'); // 기본값 설정
+      }
       setCurrentStep(3);
     } else if (isShareMode) {
       // 공유 모드: ShareDialog 표시
@@ -44,7 +57,12 @@ export const NewProjectFlowScreen: React.FC<NewProjectFlowScreenProps> = ({
   };
 
   const handleStep2Back = () => {
-    setCurrentStep(1);
+    if (isShareMode) {
+      // 공유 모드에서는 닫기
+      onClose();
+    } else {
+      setCurrentStep(1);
+    }
   };
 
   const handleStep3Complete = () => {
@@ -86,7 +104,7 @@ export const NewProjectFlowScreen: React.FC<NewProjectFlowScreenProps> = ({
           </motion.div>
         )}
 
-        {currentStep === 2 && aspectRatio && (
+        {currentStep === 2 && (aspectRatio || isShareMode) && (
           <motion.div
             key="step2"
             initial={{ opacity: 0, x: 20 }}
@@ -95,7 +113,7 @@ export const NewProjectFlowScreen: React.FC<NewProjectFlowScreenProps> = ({
             className="h-full"
           >
             <NewProjectStep2Screen
-              aspectRatio={aspectRatio}
+              aspectRatio={aspectRatio || '9:16'}
               onNext={handleStep2Next}
               onBack={handleStep2Back}
               onClose={onClose}

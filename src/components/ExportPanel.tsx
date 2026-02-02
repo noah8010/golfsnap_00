@@ -1,12 +1,27 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * @file ExportPanel.tsx
+ * @description 내보내기 패널 컴포넌트
+ *
+ * 영상 내보내기 설정, 렌더링 진행, 완료 후 공유/다운로드 기능을 제공합니다.
+ *
+ * ## 단계 흐름
+ * 1. settings: 화질, 포맷 선택
+ * 2. rendering: 렌더링 진행 (취소 가능)
+ * 3. complete: 공유/다운로드/대시보드/계속편집 선택
+ */
+
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Share2, Download, Check } from 'lucide-react';
+import { X, Share2, Download, Check, Home, Edit3 } from 'lucide-react';
 import { ShareDialog } from './ShareDialog';
 
 interface ExportPanelProps {
+  /** 프로젝트 이름 */
   projectName: string;
+  /** 패널 닫기 콜백 */
   onClose: () => void;
-  onComplete: () => void;
+  /** 완료 후 콜백 (mode: 'dashboard' | 'continue') */
+  onComplete: (mode?: 'dashboard' | 'continue') => void;
 }
 
 type ExportStep = 'settings' | 'rendering' | 'complete';
@@ -30,8 +45,13 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ projectName, onClose, 
   const [currentTask, setCurrentTask] = useState('');
   const [showShareDialog, setShowShareDialog] = useState(false);
 
+  /** 렌더링 취소 플래그 */
+  const cancelledRef = useRef(false);
+
   useEffect(() => {
     if (step === 'rendering') {
+      cancelledRef.current = false;
+
       const tasks = [
         { name: '프레임 처리 중', duration: 2000 },
         { name: '오디오 믹싱 중', duration: 1500 },
@@ -40,28 +60,43 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ projectName, onClose, 
       ];
 
       let currentProgress = 0;
-      let taskIndex = 0;
 
       const runTasks = async () => {
         for (const task of tasks) {
+          if (cancelledRef.current) return; // 취소 확인
+
           setCurrentTask(task.name);
           const increment = 25;
           const steps = 50;
           const stepDuration = task.duration / steps;
 
           for (let i = 0; i < steps; i++) {
+            if (cancelledRef.current) return; // 취소 확인
+
             await new Promise((resolve) => setTimeout(resolve, stepDuration));
             currentProgress += increment / steps;
             setProgress(Math.min(currentProgress, 100));
           }
-          taskIndex++;
         }
-        setStep('complete');
+
+        if (!cancelledRef.current) {
+          setStep('complete');
+        }
       };
 
       runTasks();
     }
   }, [step]);
+
+  /**
+   * 렌더링 취소 핸들러
+   */
+  const handleCancelRendering = () => {
+    cancelledRef.current = true;
+    setStep('settings');
+    setProgress(0);
+    setCurrentTask('');
+  };
 
   const handleStartExport = () => {
     setStep('rendering');
@@ -254,6 +289,15 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ projectName, onClose, 
                   />
                 </div>
               </div>
+
+              {/* 취소 버튼 */}
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={handleCancelRendering}
+                className="w-full mt-6 py-3 rounded-xl bg-gray-700 text-gray-300 font-medium hover:bg-gray-600 transition-colors"
+              >
+                취소
+              </motion.button>
             </motion.div>
           )}
 
@@ -294,29 +338,52 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ projectName, onClose, 
 
               {/* Action Buttons */}
               <div className="space-y-3">
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleShare}
-                  className="w-full py-4 rounded-xl bg-golf-green text-white font-semibold flex items-center justify-center gap-2"
-                >
-                  <Share2 className="w-5 h-5" />
-                  공유하기
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleDownload}
-                  className="w-full py-4 rounded-xl bg-gray-700 text-white font-semibold flex items-center justify-center gap-2"
-                >
-                  <Download className="w-5 h-5" />
-                  다운로드
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={onComplete}
-                  className="w-full py-4 rounded-xl bg-transparent text-gray-400 font-medium"
-                >
-                  완료
-                </motion.button>
+                {/* 공유/다운로드 버튼 */}
+                <div className="flex gap-3">
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleShare}
+                    className="flex-1 py-4 rounded-xl bg-golf-green text-white font-semibold flex items-center justify-center gap-2"
+                  >
+                    <Share2 className="w-5 h-5" />
+                    공유
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleDownload}
+                    className="flex-1 py-4 rounded-xl bg-gray-700 text-white font-semibold flex items-center justify-center gap-2"
+                  >
+                    <Download className="w-5 h-5" />
+                    다운로드
+                  </motion.button>
+                </div>
+
+                {/* 구분선 */}
+                <div className="flex items-center gap-3 py-2">
+                  <div className="flex-1 h-px bg-gray-600" />
+                  <span className="text-xs text-gray-500">다음 작업</span>
+                  <div className="flex-1 h-px bg-gray-600" />
+                </div>
+
+                {/* 다음 작업 버튼 */}
+                <div className="flex gap-3">
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => onComplete('dashboard')}
+                    className="flex-1 py-3 rounded-xl bg-gray-700 text-white font-medium flex items-center justify-center gap-2"
+                  >
+                    <Home className="w-4 h-4" />
+                    대시보드
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => onComplete('continue')}
+                    className="flex-1 py-3 rounded-xl bg-gray-700 text-white font-medium flex items-center justify-center gap-2"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    계속 편집
+                  </motion.button>
+                </div>
               </div>
             </motion.div>
           )}

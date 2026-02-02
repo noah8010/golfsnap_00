@@ -1,15 +1,79 @@
+/**
+ * @file EditorWorkspaceScreen.tsx
+ * @description 영상 편집기 메인 화면 컴포넌트
+ *
+ * GolfSnap 앱의 핵심 기능인 영상 편집을 담당하는 화면입니다.
+ * 모바일 환경에 최적화된 터치 기반 인터페이스를 제공합니다.
+ *
+ * ## 화면 구성
+ * ```
+ * ┌────────────────────────────────────┐
+ * │  ← 프로젝트명          [내보내기]   │  상단 바
+ * ├────────────────────────────────────┤
+ * │                                    │
+ * │         영상 미리보기               │  미리보기 영역 (45%)
+ * │   (텍스트/스티커 오버레이 포함)      │
+ * │                                    │
+ * ├──────┬─────────────────────────────┤
+ * │ 영상 │ [클립1] [클립2] [클립3]      │
+ * │텍스트│    [텍스트]                  │  타임라인 (5개 트랙)
+ * │오디오│        [BGM]                 │
+ * │ 필터│ [필터]                       │
+ * │스티커│   [스티커]                   │
+ * │      │        │← 중앙 플레이헤드    │
+ * ├──────┴─────────────────────────────┤
+ * │ [다중선택] [분할] [속도] [복제] [삭제]│  하단 툴바
+ * └────────────────────────────────────┘
+ * ```
+ *
+ * ## 주요 기능
+ * 1. **타임라인 편집**
+ *    - 5개 트랙: 영상, 텍스트, 오디오, 필터, 스티커
+ *    - 중앙 고정 플레이헤드 (타임라인이 스크롤됨)
+ *    - 클립 선택, 분할, 복제, 삭제
+ *    - 클립 트리밍 (시작점/끝점 조정)
+ *    - 클립 드래그 이동 (롱프레스 후)
+ *
+ * 2. **미리보기**
+ *    - 화면 비율별 표시 (16:9, 9:16, 1:1)
+ *    - 텍스트/스티커 실시간 오버레이
+ *    - 재생/일시정지 컨트롤
+ *
+ * 3. **편집 패널**
+ *    - SpeedPanel: 재생 속도 조절 (0.1x ~ 8x)
+ *    - FilterPanel: 색상 필터 및 조정
+ *    - AudioPanel: 오디오/BGM 설정
+ *    - TextPanel: 텍스트 추가/편집
+ *    - StickerPanel: 스티커 추가/편집
+ *    - ExportPanel: 내보내기 시뮬레이션
+ *
+ * 4. **제스처**
+ *    - 핀치 줌: 타임라인 확대/축소
+ *    - 롱프레스: 클립 드래그 모드
+ *    - 스와이프: 타임라인 스크롤
+ *
+ * ## 상태 관리
+ * - useTimeline 훅: 타임라인 클립 조작
+ * - usePinchZoom 훅: 핀치 줌 제스처
+ * - 로컬 상태: UI 패널 표시, 재생 상태 등
+ *
+ * @see useTimeline - 타임라인 편집 로직
+ * @see TimelineClip - 개별 클립 컴포넌트
+ */
+
 import React, { useMemo, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronLeft,
-  Play,
-  Pause,
-  Maximize2,
-  Scissors,
-  Trash2,
-  Copy as CopyIcon,
-  Gauge,
-  CheckSquare,
+  ChevronLeft,   // 뒤로가기 아이콘
+  Play,          // 재생 아이콘
+  Pause,         // 일시정지 아이콘
+  Maximize2,     // 전체화면 아이콘
+  Scissors,      // 분할 아이콘
+  Trash2,        // 삭제 아이콘
+  Copy as CopyIcon,  // 복제 아이콘
+  Gauge,         // 속도 아이콘
+  CheckSquare,   // 다중선택 아이콘
+  Volume2,       // 볼륨 아이콘
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { TimelineItem } from '../types/golf';
@@ -19,6 +83,7 @@ import { AudioPanel, AudioSettings } from '../components/AudioPanel';
 import { TextPanel, TextSettings } from '../components/TextPanel';
 import { StickerPanel, StickerSettings } from '../components/StickerPanel';
 import { ExportPanel } from '../components/ExportPanel';
+import { ClipVolumePanel } from '../components/ClipVolumePanel';
 import { TimelineClip } from '../components/TimelineClip';
 import { DraggableOverlay } from '../components/DraggableOverlay';
 import { useTimeline } from '../hooks/useTimeline';
@@ -26,14 +91,9 @@ import { usePinchZoom } from '../hooks/usePinchZoom';
 import { TIMELINE_CONFIG, INITIAL_TIMELINE_CLIPS } from '../constants/editor';
 
 /**
- * 에디터 워크스페이스 화면
+ * 에디터 워크스페이스 화면 컴포넌트
  *
- * 구성:
- * - 상단 바: 뒤로가기, 제목 편집, 내보내기
- * - 미리보기: 비디오 + 텍스트/스티커 오버레이
- * - 타임라인: 5개 트랙 (영상/텍스트/오디오/필터/스티커)
- * - 하단 툴바: 조작 버튼 (다중선택/분할/속도/복제/삭제)
- * - 패널: Speed, Filter, Audio, Text, Sticker, Export
+ * @returns React 컴포넌트
  */
 export const EditorWorkspaceScreen: React.FC = () => {
   const { currentProject, setCurrentScreen } = useAppStore();
@@ -82,6 +142,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
   const [showTextPanel, setShowTextPanel] = useState(false);
   const [showExportPanel, setShowExportPanel] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showVolumePanel, setShowVolumePanel] = useState(false);
   const [editingTextClip, setEditingTextClip] = useState<TimelineItem | null>(null);
   const [editingAudioClip, setEditingAudioClip] = useState<TimelineItem | null>(null);
   const [editingFilterClip, setEditingFilterClip] = useState<TimelineItem | null>(null);
@@ -130,12 +191,46 @@ export const EditorWorkspaceScreen: React.FC = () => {
     const duration = paddingSeconds + totalDuration + paddingSeconds; // 좌측 + 실제 + 우측
     const width = duration * TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom;
     const padding = paddingSeconds * TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom;
-    
+
     return {
       scrollableWidth: width,
       leftPadding: padding
     };
   }, [totalDuration, timelineZoom]);
+
+  // ============================================
+  // 오버랩 감지 (같은 트랙 내 클립 겹침 확인)
+  // ============================================
+  const overlappingClipIds = useMemo(() => {
+    const overlapping = new Set<string>();
+
+    // 트랙별로 그룹화
+    const trackGroups = timelineClips.reduce((acc, clip) => {
+      if (!acc[clip.track]) acc[clip.track] = [];
+      acc[clip.track].push(clip);
+      return acc;
+    }, {} as Record<string, TimelineItem[]>);
+
+    // 각 트랙에서 오버랩 확인
+    Object.values(trackGroups).forEach((clips) => {
+      for (let i = 0; i < clips.length; i++) {
+        for (let j = i + 1; j < clips.length; j++) {
+          const a = clips[i];
+          const b = clips[j];
+          const aEnd = a.position + a.duration;
+          const bEnd = b.position + b.duration;
+
+          // 두 클립이 겹치는지 확인
+          if (a.position < bEnd && aEnd > b.position) {
+            overlapping.add(a.id);
+            overlapping.add(b.id);
+          }
+        }
+      }
+    });
+
+    return overlapping;
+  }, [timelineClips]);
 
   // ============================================
   // 기본 핸들러
@@ -232,6 +327,20 @@ export const EditorWorkspaceScreen: React.FC = () => {
   const handleApplySpeed = (speed: number) => {
     if (selectedClipId) {
       updateClipSpeed(selectedClipId, speed);
+    }
+  };
+
+  /**
+   * 클립 볼륨 적용 핸들러
+   * 비디오 클립의 원본 오디오 볼륨을 조절합니다.
+   */
+  const handleApplyVolume = (volume: number, muted: boolean) => {
+    if (selectedClipId) {
+      updateClip(selectedClipId, {
+        volume: muted ? 0 : volume,
+        audioMuted: muted,
+      });
+      setShowVolumePanel(false);
     }
   };
 
@@ -687,6 +796,10 @@ export const EditorWorkspaceScreen: React.FC = () => {
           <div className="h-16 border-b border-gray-200 flex items-center justify-center">
             <span className="text-xs text-gray-600 font-medium">영상</span>
           </div>
+          {/* 오버레이 트랙 레이블 */}
+          <div className="h-12 border-b border-gray-200 flex items-center justify-center">
+            <span className="text-xs text-gray-600 font-medium">오버레이</span>
+          </div>
           {/* 텍스트 트랙 레이블 */}
           <button 
             className="h-12 border-b border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"
@@ -831,6 +944,28 @@ export const EditorWorkspaceScreen: React.FC = () => {
                       zoom={timelineZoom}
                       isDraggable={true}
                       leftPadding={leftPadding}
+                      isOverlapping={overlappingClipIds.has(clip.id)}
+                      onSelect={setSelectedClipId}
+                      onMove={moveClip}
+                      onTrimStart={trimClipStart}
+                      onTrimEnd={trimClipEnd}
+                    />
+                  ))}
+              </div>
+
+              {/* Video Overlay Track (PiP) */}
+              <div className="h-12 bg-sky-50 border-b border-gray-200 relative timeline-background" style={{ paddingLeft: `${leftPadding}px` }}>
+                {timelineClips
+                  .filter((clip) => clip.track === 'video-overlay')
+                  .map((clip) => (
+                    <TimelineClip
+                      key={clip.id}
+                      clip={clip}
+                      isSelected={selectedClipId === clip.id}
+                      zoom={timelineZoom}
+                      isDraggable={true}
+                      leftPadding={leftPadding}
+                      isOverlapping={overlappingClipIds.has(clip.id)}
                       onSelect={setSelectedClipId}
                       onMove={moveClip}
                       onTrimStart={trimClipStart}
@@ -851,6 +986,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
                       zoom={timelineZoom}
                       isDraggable={true}
                       leftPadding={leftPadding}
+                      isOverlapping={overlappingClipIds.has(clip.id)}
                       onSelect={setSelectedClipId}
                       onDoubleClick={(clip) => {
                         setEditingTextClip(clip);
@@ -876,6 +1012,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
                       zoom={timelineZoom}
                       isDraggable={true}
                       leftPadding={leftPadding}
+                      isOverlapping={overlappingClipIds.has(clip.id)}
                       onSelect={setSelectedClipId}
                       onDoubleClick={(clip) => {
                         setEditingAudioClip(clip);
@@ -901,6 +1038,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
                       zoom={timelineZoom}
                       isDraggable={true}
                       leftPadding={leftPadding}
+                      isOverlapping={overlappingClipIds.has(clip.id)}
                       onSelect={setSelectedClipId}
                       onDoubleClick={(clip) => {
                         setEditingFilterClip(clip);
@@ -926,6 +1064,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
                       zoom={timelineZoom}
                       isDraggable={true}
                       leftPadding={leftPadding}
+                      isOverlapping={overlappingClipIds.has(clip.id)}
                       onSelect={setSelectedClipId}
                       onDoubleClick={(clip) => {
                         setEditingStickerClip(clip);
@@ -983,13 +1122,25 @@ export const EditorWorkspaceScreen: React.FC = () => {
 
           {/* 속도 - 영상만 */}
           {selectedClip && selectedClip.track === 'video' && (
-            <motion.button 
-              whileTap={{ scale: 0.95 }} 
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={() => setShowSpeedPanel(true)}
               className="flex flex-col items-center gap-0.5 min-w-0"
             >
               <Gauge className="w-5 h-5 text-gray-700" />
               <span className="text-xs text-gray-600">속도</span>
+            </motion.button>
+          )}
+
+          {/* 볼륨 - 영상만 */}
+          {selectedClip && selectedClip.track === 'video' && (
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowVolumePanel(true)}
+              className="flex flex-col items-center gap-0.5 min-w-0"
+            >
+              <Volume2 className="w-5 h-5 text-gray-700" />
+              <span className="text-xs text-gray-600">볼륨</span>
             </motion.button>
           )}
 
@@ -1021,6 +1172,18 @@ export const EditorWorkspaceScreen: React.FC = () => {
       <AnimatePresence>
         {showSpeedPanel && selectedClip && (
           <SpeedPanel currentSpeed={selectedClip.speed || 1} onApply={handleApplySpeed} onClose={() => setShowSpeedPanel(false)} />
+        )}
+      </AnimatePresence>
+
+      {/* Clip Volume Panel */}
+      <AnimatePresence>
+        {showVolumePanel && selectedClip && selectedClip.track === 'video' && (
+          <ClipVolumePanel
+            currentVolume={selectedClip.volume ?? 1}
+            isMuted={selectedClip.audioMuted ?? false}
+            onApply={handleApplyVolume}
+            onClose={() => setShowVolumePanel(false)}
+          />
         )}
       </AnimatePresence>
 
@@ -1121,9 +1284,13 @@ export const EditorWorkspaceScreen: React.FC = () => {
           <ExportPanel
             projectName={projectTitle}
             onClose={() => setShowExportPanel(false)}
-            onComplete={() => {
+            onComplete={(mode) => {
               setShowExportPanel(false);
-              setCurrentScreen('create');
+              if (mode === 'dashboard') {
+                // 대시보드로 이동
+                setCurrentScreen('create');
+              }
+              // 'continue' 또는 mode가 없으면 에디터 유지
             }}
           />
         )}
