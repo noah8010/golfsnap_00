@@ -335,21 +335,22 @@ export const EditorWorkspaceScreen: React.FC = () => {
       if (!timelineRef.current) return;
       const containerWidth = timelineRef.current.clientWidth;
       const centerOffset = containerWidth / 2;
-      
+      const labelWidth = 64; // 좌측 레이블 너비
+
       // scrollLeft를 직접 읽어서 최신 값 사용
       let currentScrollLeft = timelineRef.current.scrollLeft;
-      
-      // scrollLeft가 0이면 아직 초기화 안된 것 → leftPadding 사용
+
+      // scrollLeft가 0이면 아직 초기화 안된 것 → leftPadding + labelWidth 사용
       if (currentScrollLeft === 0 && leftPadding > 0) {
-        currentScrollLeft = leftPadding;
-        timelineRef.current.scrollLeft = leftPadding;
-        setScrollOffset(leftPadding);
+        currentScrollLeft = leftPadding + labelWidth;
+        timelineRef.current.scrollLeft = currentScrollLeft;
+        setScrollOffset(currentScrollLeft);
       }
-      
+
       const playheadPixelPosition = currentScrollLeft + centerOffset;
-      
-      // 좌측 여백을 고려하여 실제 타임라인 시간으로 변환
-      const actualTimelinePosition = playheadPixelPosition - leftPadding;
+
+      // 좌측 레이블과 여백을 고려하여 실제 타임라인 시간으로 변환
+      const actualTimelinePosition = playheadPixelPosition - leftPadding - labelWidth;
       const playheadTime = actualTimelinePosition / (TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom);
     
     // 플레이헤드가 클립 범위 내에 있는지 확인
@@ -655,37 +656,42 @@ export const EditorWorkspaceScreen: React.FC = () => {
   };
 
   // 플레이헤드 시간 계산 함수 (공통)
+  // 좌측 레이블(64px)이 타임라인 내부에 있으므로 고려 필요
   const getPlayheadTime = React.useCallback(() => {
     if (!timelineRef.current) return 0;
 
     const containerWidth = timelineRef.current.clientWidth;
     const centerOffset = containerWidth / 2;
+    const labelWidth = 64; // 좌측 레이블 너비
 
     // scrollLeft를 직접 읽어서 최신 값 사용
     let currentScrollLeft = timelineRef.current.scrollLeft;
 
-    // scrollLeft가 0이면 아직 초기화 안된 것 → leftPadding 사용
+    // scrollLeft가 0이면 아직 초기화 안된 것 → leftPadding + labelWidth 사용
     if (currentScrollLeft === 0 && leftPadding > 0) {
-      currentScrollLeft = leftPadding;
-      timelineRef.current.scrollLeft = leftPadding;
-      setScrollOffset(leftPadding);
+      currentScrollLeft = leftPadding + labelWidth;
+      timelineRef.current.scrollLeft = currentScrollLeft;
+      setScrollOffset(currentScrollLeft);
     }
 
     const playheadPixelPosition = currentScrollLeft + centerOffset;
-    const actualTimelinePosition = playheadPixelPosition - leftPadding;
+    const actualTimelinePosition = playheadPixelPosition - leftPadding - labelWidth;
     const playheadTime = actualTimelinePosition / (TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom);
 
     return Math.max(0, playheadTime);
   }, [leftPadding, timelineZoom]);
 
   // 초기 스크롤 위치 설정 (0초가 중앙에 오도록)
+  // 좌측 레이블(64px)이 타임라인 내부에 있으므로 추가 오프셋 필요
+  const LABEL_WIDTH = 64;
   React.useLayoutEffect(() => {
     if (timelineRef.current && leftPadding > 0) {
-      // 좌측 여백으로 스크롤하여 0초를 중앙에 배치
-      timelineRef.current.scrollLeft = leftPadding;
+      // 좌측 레이블 + 좌측 여백으로 스크롤하여 0초를 중앙에 배치
+      const initialScroll = leftPadding + LABEL_WIDTH;
+      timelineRef.current.scrollLeft = initialScroll;
       // scrollOffset state도 직접 업데이트 (onScroll 이벤트 없이)
-      setScrollOffset(leftPadding);
-      console.log('[Timeline] 초기 스크롤 위치 설정:', leftPadding);
+      setScrollOffset(initialScroll);
+      console.log('[Timeline] 초기 스크롤 위치 설정:', initialScroll);
     }
   }, [leftPadding, timelineZoom]); // zoom 변경 시에도 재조정
 
@@ -844,151 +850,118 @@ export const EditorWorkspaceScreen: React.FC = () => {
       </div>
 
       {/* Timeline Container */}
-      <div className="flex-1 flex bg-white overflow-hidden relative">
-        {/* 좌측 트랙 레이블 (고정 컬럼) */}
-        <div className="flex-shrink-0 w-16 bg-gray-100 border-r border-gray-200 flex flex-col">
-          {/* 줌 컨트롤 영역 */}
-          <div className="h-[38px] border-b border-gray-200" />
-          {/* Time Ruler 공간 */}
-          <div className="h-6 border-b border-gray-200" />
-          {/* 영상 트랙 레이블 */}
-          <div className="h-16 border-b border-gray-200 flex items-center justify-center">
-            <span className="text-xs text-gray-600 font-medium">영상</span>
-          </div>
-          {/* 텍스트 트랙 레이블 */}
-          <button 
-            className="h-12 border-b border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"
-            onClick={() => setShowTextPanel(true)}
-          >
-            <span className="text-xs text-gray-600 font-medium">텍스트</span>
-          </button>
-          {/* 오디오 트랙 레이블 */}
-          <button 
-            className="h-12 border-b border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"
-            onClick={() => setShowAudioPanel(true)}
-          >
-            <span className="text-xs text-gray-600 font-medium">오디오</span>
-          </button>
-          {/* 필터 트랙 레이블 */}
-          <button
-            className="h-12 border-b border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"
-            onClick={() => setShowFilterPanel(true)}
-          >
-            <span className="text-xs text-gray-600 font-medium">필터</span>
-          </button>
-          {/* 스티커 트랙 레이블 */}
-          <button
-            className="h-12 border-b border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"
-            onClick={() => setShowStickerPanel(true)}
-          >
-            <span className="text-xs text-gray-600 font-medium">스티커</span>
-          </button>
-        </div>
-
-        {/* 우측 타임라인 영역 (스크롤) */}
-        <div className="flex-1 flex flex-col overflow-hidden relative">
-          {/* 줌 컨트롤 */}
-          <div className="flex-shrink-0 px-4 py-2 bg-gray-100 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-600 font-medium">타임라인</span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setTimelineZoom(Math.max(TIMELINE_CONFIG.ZOOM_MIN, timelineZoom - TIMELINE_CONFIG.ZOOM_STEP))}
-                  className="text-xs text-gray-600 hover:text-gray-900 font-medium"
-                >
-                  -
-                </button>
-                <span className="text-xs text-gray-600 w-8 text-center font-medium">{timelineZoom}x</span>
-                <button
-                  onClick={() => setTimelineZoom(Math.min(TIMELINE_CONFIG.ZOOM_MAX, timelineZoom + TIMELINE_CONFIG.ZOOM_STEP))}
-                  className="text-xs text-gray-600 hover:text-gray-900 font-medium"
-                >
-                  +
-                </button>
-              </div>
+      <div className="flex-1 flex flex-col bg-white overflow-hidden relative">
+        {/* 줌 컨트롤 (고정) */}
+        <div className="flex-shrink-0 px-4 py-2 bg-gray-100 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-600 font-medium">타임라인</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setTimelineZoom(Math.max(TIMELINE_CONFIG.ZOOM_MIN, timelineZoom - TIMELINE_CONFIG.ZOOM_STEP))}
+                className="text-xs text-gray-600 hover:text-gray-900 font-medium"
+              >
+                -
+              </button>
+              <span className="text-xs text-gray-600 w-8 text-center font-medium">{timelineZoom}x</span>
+              <button
+                onClick={() => setTimelineZoom(Math.min(TIMELINE_CONFIG.ZOOM_MAX, timelineZoom + TIMELINE_CONFIG.ZOOM_STEP))}
+                className="text-xs text-gray-600 hover:text-gray-900 font-medium"
+              >
+                +
+              </button>
             </div>
           </div>
+        </div>
 
+        {/* 타임라인 스크롤 영역 (가로+세로 스크롤, 좌측 레이블은 sticky) */}
+        <div
+          ref={timelineRef}
+          className="flex-1 overflow-auto scrollbar-hide cursor-grab active:cursor-grabbing"
+          onScroll={(e) => {
+            const target = e.target as HTMLElement;
+            setScrollOffset(target.scrollLeft);
+            // 중앙 플레이헤드 위치 기준으로 실제 타임라인 시간 계산
+            const containerWidth = target.clientWidth;
+            const centerOffset = containerWidth / 2;
+            const playheadPixelPosition = target.scrollLeft + centerOffset;
+            const actualTimelinePosition = playheadPixelPosition - leftPadding - 64; // 64px = 좌측 레이블 너비
+            const time = actualTimelinePosition / (TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom);
+            setCurrentTime(Math.max(0, time));
+          }}
+          onClick={(e) => {
+            // 빈 공간 클릭 시 선택 취소
+            if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.timeline-background')) {
+              setSelectedClipId(null);
+            }
+          }}
+          onMouseDown={(e) => {
+            // 클립 또는 트림 핸들러 영역이면 스크롤 방지
+            const target = e.target as HTMLElement;
+            if (target.closest('.timeline-clip') || target.closest('.trim-handle') || target.closest('.track-label')) return;
+
+            const el = e.currentTarget;
+            const startX = e.pageX - el.offsetLeft;
+            const scrollLeft = el.scrollLeft;
+
+            const onMouseMove = (e: MouseEvent) => {
+              const x = e.pageX - el.offsetLeft;
+              const walk = (x - startX) * 2;
+              el.scrollLeft = scrollLeft - walk;
+            };
+
+            const onMouseUp = () => {
+              el.classList.remove('cursor-grabbing');
+              el.classList.add('cursor-grab');
+              document.removeEventListener('mousemove', onMouseMove);
+              document.removeEventListener('mouseup', onMouseUp);
+            };
+
+            el.classList.remove('cursor-grab');
+            el.classList.add('cursor-grabbing');
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+          }}
+          style={{
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            touchAction: 'pan-x pan-y',
+          }}
+        >
+          <style>{`
+            .timeline-scrollable::-webkit-scrollbar {
+              display: none;
+            }
+          `}</style>
           <div
-            ref={timelineRef}
-            className="flex-1 overflow-x-auto overflow-y-auto scrollbar-hide cursor-grab active:cursor-grabbing"
-            onScroll={(e) => {
-              const target = e.target as HTMLElement;
-              setScrollOffset(target.scrollLeft);
-              // 중앙 플레이헤드 위치 기준으로 실제 타임라인 시간 계산
-              const containerWidth = target.clientWidth;
-              const centerOffset = containerWidth / 2;
-              const playheadPixelPosition = target.scrollLeft + centerOffset;
-              const actualTimelinePosition = playheadPixelPosition - leftPadding;
-              const time = actualTimelinePosition / (TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom);
-              setCurrentTime(Math.max(0, time));
-            }}
-            onClick={(e) => {
-              // 빈 공간 클릭 시 선택 취소
-              if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.timeline-background')) {
-                setSelectedClipId(null);
-              }
-            }}
-            onMouseDown={(e) => {
-              // 클립 또는 트림 핸들러 영역이면 스크롤 방지
-              const target = e.target as HTMLElement;
-              if (target.closest('.timeline-clip') || target.closest('.trim-handle')) return;
-              
-              const el = e.currentTarget;
-              const startX = e.pageX - el.offsetLeft;
-              const scrollLeft = el.scrollLeft;
-
-              const onMouseMove = (e: MouseEvent) => {
-                const x = e.pageX - el.offsetLeft;
-                const walk = (x - startX) * 2;
-                el.scrollLeft = scrollLeft - walk;
-              };
-
-              const onMouseUp = () => {
-                el.classList.remove('cursor-grabbing');
-                el.classList.add('cursor-grab');
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
-              };
-
-              el.classList.remove('cursor-grab');
-              el.classList.add('cursor-grabbing');
-              document.addEventListener('mousemove', onMouseMove);
-              document.addEventListener('mouseup', onMouseUp);
-            }}
-            style={{
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              touchAction: 'pan-x pan-y',
-            }}
+            className="relative timeline-background"
+            style={{ width: `${scrollableWidth + 64}px`, minHeight: '100%' }}
           >
-            <style>{`
-              .timeline-scrollable::-webkit-scrollbar {
-                display: none;
-              }
-            `}</style>
-            <div
-              className="relative timeline-background"
-              style={{ width: `${scrollableWidth}px`, minHeight: '100%' }}
-            >
-              {/* Time Ruler */}
-              <div className="sticky top-0 z-10 h-6 bg-gray-100 border-b border-gray-200 flex">
-                {/* 좌측 여백 */}
-                <div style={{ width: `${leftPadding}px`, flexShrink: 0 }} />
-                {/* 실제 타임라인 눈금 */}
-                {Array.from({ length: Math.ceil(totalDuration / 5) }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="flex-shrink-0 border-r border-gray-200 text-xs text-gray-600 px-1"
-                    style={{ width: `${5 * TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom}px` }}
-                  >
-                    {i * 5}s
-                  </div>
-                ))}
-              </div>
+            {/* Time Ruler */}
+            <div className="sticky top-0 z-20 h-6 bg-gray-100 border-b border-gray-200 flex">
+              {/* 좌측 레이블 공간 (sticky) */}
+              <div className="sticky left-0 z-30 w-16 flex-shrink-0 bg-gray-100 border-r border-gray-200" />
+              {/* 좌측 여백 */}
+              <div style={{ width: `${leftPadding}px`, flexShrink: 0 }} />
+              {/* 실제 타임라인 눈금 */}
+              {Array.from({ length: Math.ceil(totalDuration / 5) }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex-shrink-0 border-r border-gray-200 text-xs text-gray-600 px-1"
+                  style={{ width: `${5 * TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom}px` }}
+                >
+                  {i * 5}s
+                </div>
+              ))}
+            </div>
 
-              {/* Video Track */}
-              <div className="h-16 bg-gray-50 border-b border-gray-200 relative timeline-background" style={{ paddingLeft: `${leftPadding}px` }}>
+            {/* Video Track */}
+            <div className="h-16 bg-gray-50 border-b border-gray-200 relative timeline-background flex">
+              {/* 좌측 레이블 (sticky) */}
+              <div className="track-label sticky left-0 z-20 w-16 flex-shrink-0 bg-gray-100 border-r border-gray-200 flex items-center justify-center">
+                <span className="text-xs text-gray-600 font-medium">영상</span>
+              </div>
+              {/* 클립 영역 */}
+              <div className="flex-1 relative" style={{ paddingLeft: `${leftPadding}px` }}>
                 {timelineClips
                   .filter((clip) => clip.track === 'video')
                   .map((clip) => (
@@ -1007,9 +980,19 @@ export const EditorWorkspaceScreen: React.FC = () => {
                     />
                   ))}
               </div>
+            </div>
 
             {/* Text Track */}
-            <div className="h-12 bg-gray-50 border-b border-gray-200 relative timeline-background" style={{ paddingLeft: `${leftPadding}px` }}>
+            <div className="h-12 bg-gray-50 border-b border-gray-200 relative timeline-background flex">
+              {/* 좌측 레이블 (sticky) */}
+              <button
+                className="track-label sticky left-0 z-20 w-16 flex-shrink-0 bg-gray-100 border-r border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                onClick={() => setShowTextPanel(true)}
+              >
+                <span className="text-xs text-gray-600 font-medium">텍스트</span>
+              </button>
+              {/* 클립 영역 */}
+              <div className="flex-1 relative" style={{ paddingLeft: `${leftPadding}px` }}>
                 {timelineClips
                   .filter((clip) => clip.track === 'text')
                   .map((clip) => (
@@ -1033,9 +1016,19 @@ export const EditorWorkspaceScreen: React.FC = () => {
                   ))
                 }
               </div>
+            </div>
 
             {/* Audio Track */}
-            <div className="h-12 bg-gray-50 border-b border-gray-200 relative timeline-background" style={{ paddingLeft: `${leftPadding}px` }}>
+            <div className="h-12 bg-gray-50 border-b border-gray-200 relative timeline-background flex">
+              {/* 좌측 레이블 (sticky) */}
+              <button
+                className="track-label sticky left-0 z-20 w-16 flex-shrink-0 bg-gray-100 border-r border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                onClick={() => setShowAudioPanel(true)}
+              >
+                <span className="text-xs text-gray-600 font-medium">오디오</span>
+              </button>
+              {/* 클립 영역 */}
+              <div className="flex-1 relative" style={{ paddingLeft: `${leftPadding}px` }}>
                 {timelineClips
                   .filter((clip) => clip.track === 'audio')
                   .map((clip) => (
@@ -1059,9 +1052,19 @@ export const EditorWorkspaceScreen: React.FC = () => {
                   ))
                 }
               </div>
+            </div>
 
             {/* Filter Track */}
-            <div className="h-12 bg-gray-50 border-b border-gray-200 relative timeline-background" style={{ paddingLeft: `${leftPadding}px` }}>
+            <div className="h-12 bg-gray-50 border-b border-gray-200 relative timeline-background flex">
+              {/* 좌측 레이블 (sticky) */}
+              <button
+                className="track-label sticky left-0 z-20 w-16 flex-shrink-0 bg-gray-100 border-r border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                onClick={() => setShowFilterPanel(true)}
+              >
+                <span className="text-xs text-gray-600 font-medium">필터</span>
+              </button>
+              {/* 클립 영역 */}
+              <div className="flex-1 relative" style={{ paddingLeft: `${leftPadding}px` }}>
                 {timelineClips
                   .filter((clip) => clip.track === 'filter')
                   .map((clip) => (
@@ -1085,9 +1088,19 @@ export const EditorWorkspaceScreen: React.FC = () => {
                   ))
                 }
               </div>
+            </div>
 
             {/* Sticker Track */}
-            <div className="h-12 bg-gray-50 border-b border-gray-200 relative timeline-background" style={{ paddingLeft: `${leftPadding}px` }}>
+            <div className="h-12 bg-gray-50 border-b border-gray-200 relative timeline-background flex">
+              {/* 좌측 레이블 (sticky) */}
+              <button
+                className="track-label sticky left-0 z-20 w-16 flex-shrink-0 bg-gray-100 border-r border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                onClick={() => setShowStickerPanel(true)}
+              >
+                <span className="text-xs text-gray-600 font-medium">스티커</span>
+              </button>
+              {/* 클립 영역 */}
+              <div className="flex-1 relative" style={{ paddingLeft: `${leftPadding}px` }}>
                 {timelineClips
                   .filter((clip) => clip.track === 'sticker')
                   .map((clip) => (
@@ -1113,18 +1126,18 @@ export const EditorWorkspaceScreen: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Centered Playhead - Fixed to right panel */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-red-500 z-30 pointer-events-none">
-            <div
-              className="absolute left-1/2 -translate-x-1/2 w-3 h-3 bg-red-500 rounded-full"
-              style={{ top: `${TIMELINE_CONFIG.PLAYHEAD_TOP_OFFSET}px` }}
-            />
-            <div
-              className="absolute left-1/2 -translate-x-1/2 w-0.5 h-full bg-red-500"
-              style={{ top: `${TIMELINE_CONFIG.PLAYHEAD_TOP_POSITION}px` }}
-            />
-          </div>
+        {/* Centered Playhead - Fixed to container */}
+        <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-red-500 z-30 pointer-events-none">
+          <div
+            className="absolute left-1/2 -translate-x-1/2 w-3 h-3 bg-red-500 rounded-full"
+            style={{ top: `${TIMELINE_CONFIG.PLAYHEAD_TOP_OFFSET}px` }}
+          />
+          <div
+            className="absolute left-1/2 -translate-x-1/2 w-0.5 h-full bg-red-500"
+            style={{ top: `${TIMELINE_CONFIG.PLAYHEAD_TOP_POSITION}px` }}
+          />
         </div>
       </div>
 
