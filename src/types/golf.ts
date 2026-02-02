@@ -267,13 +267,12 @@ export interface TimelineItem {
   /**
    * 트랙 유형
    * - video: 영상 트랙 (메인)
-   * - video-overlay: 영상 오버레이 트랙 (PiP)
    * - text: 텍스트 오버레이 트랙
    * - audio: 오디오/BGM 트랙
    * - filter: 색상 필터 트랙
    * - sticker: 스티커 트랙
    */
-  track: 'video' | 'video-overlay' | 'text' | 'audio' | 'filter' | 'sticker';
+  track: 'video' | 'text' | 'audio' | 'filter' | 'sticker';
 
   /** 전환 효과 설정 */
   transitions?: {
@@ -382,18 +381,6 @@ export interface TimelineItem {
   /** 화면 상의 스티커 위치 (0~1 비율) */
   stickerPosition?: { x: number; y: number };
 
-  // ========================================
-  // 비디오 오버레이 트랙 전용 속성 (PiP)
-  // ========================================
-
-  /** 오버레이 위치 X (0~1 비율, 기본 0.7 = 우측) */
-  overlayPositionX?: number;
-
-  /** 오버레이 위치 Y (0~1 비율, 기본 0.1 = 상단) */
-  overlayPositionY?: number;
-
-  /** 오버레이 크기 (0.1~1, 기본 0.3 = 30%) */
-  overlayScale?: number;
 }
 
 // ============================================================================

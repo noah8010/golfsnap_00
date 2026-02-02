@@ -24,7 +24,7 @@ interface ExportPanelProps {
   onComplete: (mode?: 'dashboard' | 'continue') => void;
 }
 
-type ExportStep = 'settings' | 'rendering' | 'complete';
+type ExportStep = 'settings' | 'rendering' | 'complete' | 'download-complete';
 
 const QUALITY_OPTIONS = [
   { id: '720p', label: 'HD 720p', resolution: '1280x720', size: '작음' },
@@ -110,14 +110,20 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ projectName, onClose, 
     // 실제로는 공유 API 호출
     console.log('공유하기:', { title, content, projectName, quality, format });
     setShowShareDialog(false);
-    // 공유 완료 후 메인화면으로 이동
-    onComplete();
+    // 공유 완료 후 메인화면(대시보드)으로 이동
+    onComplete('dashboard');
   };
 
   const handleDownload = () => {
-    // 실제로는 다운로드 기능 구현
-    // 다운로드 완료 후 메인화면으로 이동
-    onComplete();
+    // 다운로드 시뮬레이션 (실제로는 다운로드 API 호출)
+    console.log('다운로드:', { projectName, quality, format });
+    // 다운로드 완료 팝업 표시
+    setStep('download-complete');
+  };
+
+  const handleDownloadConfirm = () => {
+    // 다운로드 완료 확인 후 대시보드로 이동
+    onComplete('dashboard');
   };
 
   return (
@@ -384,6 +390,54 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ projectName, onClose, 
                     계속 편집
                   </motion.button>
                 </div>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 'download-complete' && (
+            <motion.div
+              key="download-complete"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="p-6"
+            >
+              <div className="text-center">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                  className="w-20 h-20 rounded-full bg-golf-green/20 flex items-center justify-center mx-auto mb-4"
+                >
+                  <Download className="w-10 h-10 text-golf-green" />
+                </motion.div>
+                <h3 className="text-xl font-bold text-white mb-2">다운로드 완료!</h3>
+                <p className="text-sm text-gray-400 mb-6">
+                  {projectName}.{format} 파일이<br />
+                  기기에 저장되었습니다
+                </p>
+
+                {/* 파일 정보 */}
+                <div className="mb-6 p-4 bg-gray-700 rounded-xl text-left">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-400">파일명</span>
+                    <span className="text-sm text-white font-medium">{projectName}.{format}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-400">화질</span>
+                    <span className="text-sm text-white font-medium">
+                      {QUALITY_OPTIONS.find((q) => q.id === quality)?.label}
+                    </span>
+                  </div>
+                </div>
+
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleDownloadConfirm}
+                  className="w-full py-4 rounded-xl bg-golf-green text-white font-semibold"
+                >
+                  확인
+                </motion.button>
               </div>
             </motion.div>
           )}

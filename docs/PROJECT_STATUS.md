@@ -28,7 +28,7 @@ React 18 + TypeScript 5 + Vite 5 + Zustand + Tailwind CSS + Framer Motion
 |------|------|
 | 프로젝트 대시보드 | 프로젝트 목록, 검색, 정렬 |
 | 3단계 새 프로젝트 생성 | 비율 선택 → 미디어 선택 → AI 처리 |
-| 6개 트랙 타임라인 | 영상, 영상 오버레이(PiP), 텍스트, 오디오, 필터, 스티커 |
+| 5개 트랙 타임라인 | 영상, 텍스트, 오디오, 필터, 스티커 |
 | 클립 조작 | 분할, 복제, 삭제, 속도, 트림 |
 | 클립 볼륨 조절 | 비디오 클립별 원본 오디오 볼륨/음소거 |
 | 클립 오버랩 표시 | 같은 트랙 내 겹침 시각화 (점선 테두리) |
@@ -70,9 +70,12 @@ npm run build   # 프로덕션 빌드
 
 | 문서 | 설명 |
 |------|------|
+| [../CLAUDE.md](../CLAUDE.md) | AI 세션 가이드 (필수) |
+| [CODING_RULES.md](./CODING_RULES.md) | 코딩 규칙 |
+| [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md) | 디자인 시스템 |
 | [FEATURE_GUIDE.md](./FEATURE_GUIDE.md) | 기능별 상세 가이드 |
 | [TODO.md](./TODO.md) | 작업 목록 |
 
 ---
 
-**상세 내용은 [FEATURE_GUIDE.md](./FEATURE_GUIDE.md) 참조**
+**새 세션 시작 시 [../CLAUDE.md](../CLAUDE.md) 먼저 읽기**

@@ -162,12 +162,6 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
           gradient: 'from-blue-600 to-blue-500',
           ringColor: 'ring-blue-500',
         };
-      case 'video-overlay':
-        return {
-          backgroundColor: '#0ea5e9',           // 하늘색 (PiP 오버레이)
-          gradient: 'from-sky-600 to-sky-400',
-          ringColor: 'ring-sky-500',
-        };
       case 'text':
         return {
           backgroundColor: '#f59e0b',           // 주황색
@@ -212,8 +206,6 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
     switch (clip.track) {
       case 'video':
         return `클립 ${clip.id.split('-')[1]}`;
-      case 'video-overlay':
-        return `PiP ${clip.id.split('-')[1]}`;
       case 'text':
         return clip.textContent || '텍스트';
       case 'audio':

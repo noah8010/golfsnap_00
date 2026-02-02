@@ -96,7 +96,7 @@ import { TIMELINE_CONFIG, INITIAL_TIMELINE_CLIPS } from '../constants/editor';
  * @returns React 컴포넌트
  */
 export const EditorWorkspaceScreen: React.FC = () => {
-  const { currentProject, setCurrentScreen } = useAppStore();
+  const { currentProject, setCurrentScreen, updateProject, setCurrentProject } = useAppStore();
   const timelineRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -233,10 +233,69 @@ export const EditorWorkspaceScreen: React.FC = () => {
   }, [timelineClips]);
 
   // ============================================
+  // 프로젝트 저장 함수
+  // ============================================
+
+  /**
+   * 현재 편집 내용을 프로젝트에 저장
+   * 프로토타입이므로 로컬 상태(Zustand)에만 저장
+   */
+  const saveProject = useCallback(() => {
+    if (!currentProject) return;
+
+    // 타임라인 클립 및 프로젝트명 저장
+    const totalDur = timelineClips.length > 0
+      ? Math.max(...timelineClips.map((clip) => clip.position + clip.duration))
+      : 0;
+
+    updateProject(currentProject.id, {
+      name: projectTitle,
+      timeline: timelineClips,
+      duration: totalDur,
+    });
+
+    // currentProject도 동기화
+    setCurrentProject({
+      ...currentProject,
+      name: projectTitle,
+      timeline: timelineClips,
+      duration: totalDur,
+      updatedAt: Date.now(),
+    });
+
+    console.log('[Editor] 프로젝트 저장됨:', projectTitle);
+  }, [currentProject, projectTitle, timelineClips, updateProject, setCurrentProject]);
+
+  /**
+   * 프로젝트명 편집 완료 핸들러
+   */
+  const handleTitleEditComplete = useCallback(() => {
+    setIsEditingTitle(false);
+    // 프로젝트명 변경 시 바로 저장
+    if (currentProject && projectTitle !== currentProject.name) {
+      updateProject(currentProject.id, { name: projectTitle });
+      setCurrentProject({
+        ...currentProject,
+        name: projectTitle,
+        updatedAt: Date.now(),
+      });
+      console.log('[Editor] 프로젝트명 변경됨:', projectTitle);
+    }
+  }, [currentProject, projectTitle, updateProject, setCurrentProject]);
+
+  // ============================================
   // 기본 핸들러
   // ============================================
   const handlePlayPause = () => setIsPlaying(!isPlaying);
-  const handleBack = () => setCurrentScreen('create');
+
+  /**
+   * 뒤로가기 핸들러 - 편집 내용 저장 후 대시보드로 이동
+   */
+  const handleBack = useCallback(() => {
+    saveProject();
+    setCurrentScreen('create');
+  }, [saveProject, setCurrentScreen]);
+
   const handleExport = () => setShowExportPanel(true);
 
   // ============================================
@@ -658,8 +717,8 @@ export const EditorWorkspaceScreen: React.FC = () => {
                 type="text"
                 value={projectTitle}
                 onChange={(e) => setProjectTitle(e.target.value)}
-                onBlur={() => setIsEditingTitle(false)}
-                onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)}
+                onBlur={handleTitleEditComplete}
+                onKeyDown={(e) => e.key === 'Enter' && handleTitleEditComplete()}
                 className="flex-1 min-w-0 px-2 py-1 bg-gray-100 border border-gray-300 rounded text-gray-900 text-base font-bold focus:outline-none focus:ring-2 focus:ring-golf-green"
                 autoFocus
               />
@@ -795,10 +854,6 @@ export const EditorWorkspaceScreen: React.FC = () => {
           {/* 영상 트랙 레이블 */}
           <div className="h-16 border-b border-gray-200 flex items-center justify-center">
             <span className="text-xs text-gray-600 font-medium">영상</span>
-          </div>
-          {/* 오버레이 트랙 레이블 */}
-          <div className="h-12 border-b border-gray-200 flex items-center justify-center">
-            <span className="text-xs text-gray-600 font-medium">오버레이</span>
           </div>
           {/* 텍스트 트랙 레이블 */}
           <button 
@@ -936,27 +991,6 @@ export const EditorWorkspaceScreen: React.FC = () => {
               <div className="h-16 bg-gray-50 border-b border-gray-200 relative timeline-background" style={{ paddingLeft: `${leftPadding}px` }}>
                 {timelineClips
                   .filter((clip) => clip.track === 'video')
-                  .map((clip) => (
-                    <TimelineClip
-                      key={clip.id}
-                      clip={clip}
-                      isSelected={selectedClipId === clip.id}
-                      zoom={timelineZoom}
-                      isDraggable={true}
-                      leftPadding={leftPadding}
-                      isOverlapping={overlappingClipIds.has(clip.id)}
-                      onSelect={setSelectedClipId}
-                      onMove={moveClip}
-                      onTrimStart={trimClipStart}
-                      onTrimEnd={trimClipEnd}
-                    />
-                  ))}
-              </div>
-
-              {/* Video Overlay Track (PiP) */}
-              <div className="h-12 bg-sky-50 border-b border-gray-200 relative timeline-background" style={{ paddingLeft: `${leftPadding}px` }}>
-                {timelineClips
-                  .filter((clip) => clip.track === 'video-overlay')
                   .map((clip) => (
                     <TimelineClip
                       key={clip.id}
@@ -1285,6 +1319,8 @@ export const EditorWorkspaceScreen: React.FC = () => {
             projectName={projectTitle}
             onClose={() => setShowExportPanel(false)}
             onComplete={(mode) => {
+              // 내보내기 완료 시 편집 내용 저장
+              saveProject();
               setShowExportPanel(false);
               if (mode === 'dashboard') {
                 // 대시보드로 이동

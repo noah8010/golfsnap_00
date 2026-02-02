@@ -26,7 +26,7 @@
 GolfSnap은 스크린골프 영상 편집을 위한 모바일 웹 프로토타입입니다.
 
 ### 주요 특징
-- **6개 트랙 타임라인**: 영상, 영상 오버레이(PiP), 텍스트, 오디오, 필터, 스티커
+- **5개 트랙 타임라인**: 영상, 텍스트, 오디오, 필터, 스티커
 - **중앙 고정 플레이헤드**: 타임라인이 스크롤되고 플레이헤드는 화면 중앙에 고정
 - **리플 편집**: 클립 길이 변경 시 뒤 클립들이 자동으로 이동
 - **클립 볼륨 조절**: 비디오 클립별 원본 오디오 볼륨/음소거
@@ -92,12 +92,11 @@ GolfSnap은 스크린골프 영상 편집을 위한 모바일 웹 프로토타�
 
 ### 4.1 타임라인 편집
 
-#### 6개 트랙
+#### 5개 트랙
 
 | 트랙 | 색상 | 기능 |
 |------|------|------|
 | 영상 | 🔵 파란색 | 비디오 클립, 분할, 속도, 볼륨 조절 |
-| 오버레이 | 🩵 하늘색 | PiP(Picture-in-Picture) 비디오 |
 | 텍스트 | 🟠 주황색 | 텍스트 오버레이 추가 |
 | 오디오 | 🟢 초록색 | BGM 및 오디오 설정 |
 | 필터 | 🟣 보라색 | 색상 필터 적용 |
@@ -247,7 +246,7 @@ interface TimelineItem {
   clipId: string;          // 연결된 클립 ID
   position: number;        // 시작 위치 (초)
   duration: number;        // 길이 (초)
-  track: 'video' | 'video-overlay' | 'text' | 'audio' | 'filter' | 'sticker';
+  track: 'video' | 'text' | 'audio' | 'filter' | 'sticker';
 
   // 트리밍용
   startTime?: number;      // 원본 시작 시간
@@ -257,11 +256,6 @@ interface TimelineItem {
   speed?: number;          // 재생 속도 (0.1 ~ 8)
   volume?: number;         // 원본 오디오 볼륨 (0 ~ 1)
   audioMuted?: boolean;    // 음소거 여부
-
-  // 비디오 오버레이(PiP) 전용
-  overlayPositionX?: number;  // 오버레이 X 위치 (0~1)
-  overlayPositionY?: number;  // 오버레이 Y 위치 (0~1)
-  overlayScale?: number;      // 오버레이 크기 (0.1~1)
 
   // 텍스트 전용
   textContent?: string;
@@ -387,7 +381,6 @@ usePinchZoom({
 
 트랙별 색상:
 - 영상: 🔵 #3b82f6
-- 오버레이: 🩵 #0ea5e9
 - 텍스트: 🟠 #f59e0b
 - 오디오: 🟢 #10b981
 - 필터: 🟣 #a855f7
@@ -476,5 +469,10 @@ npm run build
 
 ## 관련 문서
 
-- [PROJECT_STATUS.md](./PROJECT_STATUS.md) - 프로젝트 현황
-- [TODO.md](./TODO.md) - 작업 목록
+| 문서 | 설명 |
+|------|------|
+| [../CLAUDE.md](../CLAUDE.md) | AI 세션 가이드 (필수) |
+| [CODING_RULES.md](./CODING_RULES.md) | 코딩 규칙 |
+| [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md) | 디자인 시스템 |
+| [PROJECT_STATUS.md](./PROJECT_STATUS.md) | 프로젝트 현황 |
+| [TODO.md](./TODO.md) | 작업 목록 |
