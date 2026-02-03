@@ -131,6 +131,22 @@ interface AppState {
 
   /** 재생 위치 설정 함수 */
   setCurrentTime: (time: number) => void;
+
+  // ========================================
+  // 자동 저장 상태
+  // ========================================
+
+  /** 저장 상태 ('saved' | 'saving' | 'unsaved') */
+  saveStatus: 'saved' | 'saving' | 'unsaved';
+
+  /** 마지막 저장 시간 */
+  lastSavedAt: number | null;
+
+  /** 저장 상태 설정 함수 */
+  setSaveStatus: (status: 'saved' | 'saving' | 'unsaved') => void;
+
+  /** 마지막 저장 시간 설정 함수 */
+  setLastSavedAt: (time: number | null) => void;
 }
 
 // ============================================================================
@@ -440,4 +456,17 @@ export const useAppStore = create<AppState>((set) => ({
 
   setIsPlaying: (playing) => set({ isPlaying: playing }),
   setCurrentTime: (time) => set({ currentTime: time }),
+
+  // ========================================
+  // 초기 상태: 자동 저장
+  // ========================================
+
+  /** 초기 상태: 저장됨 */
+  saveStatus: 'saved',
+
+  /** 초기 저장 시간: null */
+  lastSavedAt: null,
+
+  setSaveStatus: (status) => set({ saveStatus: status }),
+  setLastSavedAt: (time) => set({ lastSavedAt: time }),
 }));

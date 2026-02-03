@@ -77,6 +77,9 @@ interface TimelineClipProps {
   /** 다른 클립과 오버랩 여부 (시각적 표시용) */
   isOverlapping?: boolean;
 
+  /** 모든 타임라인 클립 (스냅 계산용) */
+  allClips?: TimelineItem[];
+
   /** 클립 선택 시 콜백 */
   onSelect: (clipId: string) => void;
 
@@ -94,6 +97,9 @@ interface TimelineClipProps {
 
   /** 롱프레스 콜백 (툴팁 표시용) */
   onLongPress?: (clip: TimelineItem) => void;
+
+  /** 스냅 상태 변경 콜백 */
+  onSnapChange?: (snapped: boolean, snapPoint?: number) => void;
 }
 
 // ============================================================================
@@ -112,12 +118,14 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
   isDraggable,
   leftPadding = 0,
   isOverlapping = false,
+  allClips = [],
   onSelect,
   onDoubleClick,
   onMove,
   onTrimStart,
   onTrimEnd,
   onLongPress,
+  onSnapChange,
 }) => {
   // ========================================
   // 상태
@@ -229,15 +237,19 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
   /**
    * 클립 드래그 이동 로직
    * 롱프레스(0.5초) 후 드래그 가능
+   * 스냅 기능 포함
    */
   const dragHook = useDragClip({
     clipId: clip.id,
     initialPosition: clip.position,
+    clipDuration: clip.duration,
     zoom,
     pixelsPerSecond: TIMELINE_CONFIG.PIXELS_PER_SECOND,
     onMove: onMove || (() => {}),
     onSelect,
     longPressDelay: 500, // 0.5초 롱프레스
+    allClips,
+    onSnapChange,
   });
 
   // 드래그 가능 상태 (시각적 피드백용)

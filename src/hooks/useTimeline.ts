@@ -819,6 +819,9 @@ export const useTimeline = (initialClips: TimelineItem[] = []) => {
     /** 현재 타임라인의 모든 클립 */
     timelineClips,
 
+    /** 타임라인 클립 직접 설정 (Undo/Redo용) */
+    setTimelineClips,
+
     /** 선택된 클립 ID */
     selectedClipId,
 

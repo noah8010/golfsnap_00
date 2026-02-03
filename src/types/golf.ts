@@ -96,6 +96,37 @@ export interface ShotData {
 
   /** 썸네일 이미지 URL (선택적) */
   thumbnail?: string;
+
+  // ========================================
+  // 추가 메타데이터 (지능형 어시스턴트용)
+  // ========================================
+
+  /**
+   * 방향각 (degrees)
+   * 0 = 직진, 양수 = 우측, 음수 = 좌측
+   */
+  direction?: number;
+
+  /**
+   * 남은 거리 (yards)
+   * 핀까지 남은 거리
+   */
+  remainingDistance?: number;
+
+  /**
+   * 홀아웃 결과
+   * - hole-in-one: 홀인원
+   * - eagle: 이글
+   * - birdie: 버디
+   * - par: 파
+   * - bogey: 보기
+   * - double-bogey: 더블보기
+   * - other: 기타
+   */
+  holeResult?: 'hole-in-one' | 'eagle' | 'birdie' | 'par' | 'bogey' | 'double-bogey' | 'other';
+
+  /** 스핀량 (rpm - 총 스핀량) */
+  spinRate?: number;
 }
 
 // ============================================================================
@@ -193,6 +224,31 @@ export type StickerAnimationType =
   | 'float'
   | 'zoom-in'
   | 'sparkle';
+
+/**
+ * 텍스트 애니메이션 타입
+ *
+ * 텍스트에 적용할 수 있는 등장/퇴장 애니메이션 효과
+ * - none: 애니메이션 없음
+ * - fade-in/out: 페이드 인/아웃
+ * - slide-up/down/left/right: 슬라이드 효과
+ * - zoom-in: 확대 등장
+ * - bounce: 바운스 효과
+ * - typewriter: 타자기 효과
+ * - glow: 글로우 효과
+ */
+export type TextAnimationType =
+  | 'none'
+  | 'fade-in'
+  | 'fade-out'
+  | 'slide-up'
+  | 'slide-down'
+  | 'slide-left'
+  | 'slide-right'
+  | 'zoom-in'
+  | 'bounce'
+  | 'typewriter'
+  | 'glow';
 
 /**
  * 스티커 아이템 인터페이스
@@ -318,7 +374,7 @@ export interface TimelineItem {
   textUnderline?: boolean;
 
   /** 텍스트 등장 애니메이션 */
-  textAnimation?: string;
+  textAnimation?: TextAnimationType;
 
   /** 화면 상의 텍스트 위치 (0~1 비율) */
   textPosition?: { x: number; y: number };

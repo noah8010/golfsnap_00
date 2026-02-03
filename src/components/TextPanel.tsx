@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { TextAnimationType } from '../types/golf';
 
 interface TextPanelProps {
   onAdd: (text: TextSettings) => void;
@@ -20,7 +21,7 @@ export interface TextSettings {
     italic: boolean;
     underline: boolean;
   };
-  animation: string;
+  animation: TextAnimationType;
   position: { x: number; y: number };
   duration?: number;
   startTime?: number;
@@ -40,15 +41,18 @@ const COLORS = [
   '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080',
 ];
 
-const ANIMATIONS = [
-  { id: 'none', name: '없음' },
-  { id: 'fade-in', name: '페이드 인' },
-  { id: 'slide-up', name: '아래에서 위로' },
-  { id: 'slide-down', name: '위에서 아래로' },
-  { id: 'slide-left', name: '오른쪽에서 왼쪽' },
-  { id: 'slide-right', name: '왼쪽에서 오른쪽' },
-  { id: 'zoom-in', name: '확대' },
-  { id: 'bounce', name: '바운스' },
+const ANIMATIONS: { id: TextAnimationType; name: string; icon: string }[] = [
+  { id: 'none', name: '없음', icon: '−' },
+  { id: 'fade-in', name: '페이드 인', icon: '◐' },
+  { id: 'fade-out', name: '페이드 아웃', icon: '◑' },
+  { id: 'slide-up', name: '아래→위', icon: '↑' },
+  { id: 'slide-down', name: '위→아래', icon: '↓' },
+  { id: 'slide-left', name: '오른→왼', icon: '←' },
+  { id: 'slide-right', name: '왼→오른', icon: '→' },
+  { id: 'zoom-in', name: '확대', icon: '⊕' },
+  { id: 'bounce', name: '바운스', icon: '⌁' },
+  { id: 'typewriter', name: '타자기', icon: '⌨' },
+  { id: 'glow', name: '글로우', icon: '✦' },
 ];
 
 export const TextPanel: React.FC<TextPanelProps> = ({ onAdd, onClose, editingText }) => {
@@ -231,19 +235,20 @@ export const TextPanel: React.FC<TextPanelProps> = ({ onAdd, onClose, editingTex
                   {/* Animation Selection */}
                   <div>
                     <h4 className="text-sm font-semibold text-gray-400 mb-3">등장 효과</h4>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-2">
                       {ANIMATIONS.map((animation) => (
                         <motion.button
                           key={animation.id}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => setText({ ...text, animation: animation.id })}
-                          className={`py-4 px-4 rounded-xl text-sm font-semibold transition-colors ${
+                          className={`py-3 px-2 rounded-xl transition-colors ${
                             text.animation === animation.id
                               ? 'bg-golf-green text-white'
                               : 'bg-[#3d4554] text-gray-300 hover:bg-[#4a5262]'
                           }`}
                         >
-                          {animation.name}
+                          <div className="text-lg mb-0.5">{animation.icon}</div>
+                          <div className="text-xs font-medium truncate">{animation.name}</div>
                         </motion.button>
                       ))}
                     </div>

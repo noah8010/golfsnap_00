@@ -43,10 +43,24 @@
  */
 
 import { useCallback, useRef, useState, useEffect } from 'react';
+import { TimelineItem } from '../types/golf';
+import { TIMELINE_CONFIG } from '../constants/editor';
 
 // ============================================================================
 // Props 인터페이스
 // ============================================================================
+
+/**
+ * 스냅 결과 인터페이스
+ */
+interface SnapResult {
+  /** 스냅된 위치 (초) */
+  position: number;
+  /** 스냅 여부 */
+  snapped: boolean;
+  /** 스냅 포인트 시간 (초) */
+  snapPoint?: number;
+}
 
 /**
  * useDragClip 훅의 Props
@@ -57,6 +71,9 @@ interface UseDragClipProps {
 
   /** 클립의 현재 위치 (초 단위) */
   initialPosition: number;
+
+  /** 클립의 길이 (초 단위) - 스냅 계산용 */
+  clipDuration?: number;
 
   /** 현재 타임라인 줌 레벨 */
   zoom: number;
@@ -72,6 +89,12 @@ interface UseDragClipProps {
 
   /** 롱프레스 지연 시간 (ms, 기본 500ms) */
   longPressDelay?: number;
+
+  /** 모든 타임라인 클립 (스냅 계산용) */
+  allClips?: TimelineItem[];
+
+  /** 스냅 상태 변경 콜백 */
+  onSnapChange?: (snapped: boolean, snapPoint?: number) => void;
 }
 
 // ============================================================================
@@ -89,14 +112,59 @@ interface UseDragClipProps {
  * @param props - 드래그 설정 옵션
  * @returns 이벤트 핸들러 및 드래그 상태
  */
+/**
+ * 스냅 포인트 계산 함수
+ *
+ * 주어진 위치가 다른 클립의 경계에 가까우면 스냅된 위치를 반환합니다.
+ *
+ * @param position - 현재 위치 (초)
+ * @param clipDuration - 클립 길이 (초)
+ * @param clips - 모든 타임라인 클립
+ * @param excludeId - 제외할 클립 ID (자기 자신)
+ * @returns 스냅 결과
+ */
+const getSnapPosition = (
+  position: number,
+  clipDuration: number,
+  clips: TimelineItem[],
+  excludeId: string
+): SnapResult => {
+  const threshold = TIMELINE_CONFIG.SNAP_THRESHOLD;
+
+  // 다른 클립들의 시작점과 끝점을 스냅 포인트로 수집
+  const snapPoints = clips
+    .filter((c) => c.id !== excludeId)
+    .flatMap((c) => [c.position, c.position + c.duration]);
+
+  // 클립 시작점 기준 스냅 체크
+  for (const point of snapPoints) {
+    if (Math.abs(position - point) < threshold) {
+      return { position: point, snapped: true, snapPoint: point };
+    }
+  }
+
+  // 클립 끝점 기준 스냅 체크 (다른 클립 시작점에 끝점 맞추기)
+  const clipEnd = position + clipDuration;
+  for (const point of snapPoints) {
+    if (Math.abs(clipEnd - point) < threshold) {
+      return { position: point - clipDuration, snapped: true, snapPoint: point };
+    }
+  }
+
+  return { position, snapped: false };
+};
+
 export const useDragClip = ({
   clipId,
   initialPosition,
+  clipDuration = 0,
   zoom,
   pixelsPerSecond,
   onMove,
   onSelect,
   longPressDelay = 500, // 기본 0.5초
+  allClips = [],
+  onSnapChange,
 }: UseDragClipProps) => {
   // ========================================
   // 상태 정의
@@ -244,7 +312,23 @@ export const useDragClip = ({
 
         // 픽셀 이동량을 시간(초)으로 변환
         const deltaTime = deltaX / (pixelsPerSecond * zoom);
-        const newPosition = startPosition + deltaTime;
+        let newPosition = startPosition + deltaTime;
+
+        // 스냅 로직 적용
+        if (allClips.length > 0 && clipDuration > 0) {
+          const snapResult = getSnapPosition(newPosition, clipDuration, allClips, clipId);
+          newPosition = snapResult.position;
+
+          // 스냅 상태 콜백
+          if (onSnapChange) {
+            onSnapChange(snapResult.snapped, snapResult.snapPoint);
+          }
+
+          // 스냅 시 햅틱 피드백
+          if (snapResult.snapped && 'vibrate' in navigator) {
+            navigator.vibrate(10);
+          }
+        }
 
         console.log('[DragClip] 이동 중:', {
           startPosition: startPosition.toFixed(2),
@@ -281,10 +365,16 @@ export const useDragClip = ({
         console.log('[DragClip] ⚠️ 드래그 모드였지만 드래그하지 않음');
       }
 
+      // 스냅 상태 해제
+      if (onSnapChange) {
+        onSnapChange(false, undefined);
+      }
+
       // 상태 초기화
       setIsDraggable(false);
       setLongPressProgress(0);
       isDraggingRef.current = false;
+      isDraggableRef.current = false;
       startPosRef.current = null;
 
       // 이벤트 리스너 제거
@@ -395,7 +485,18 @@ export const useDragClip = ({
         isDraggingRef.current = true;
 
         const deltaTime = deltaX / (pixelsPerSecond * zoom);
-        const newPosition = startPosition + deltaTime;
+        let newPosition = startPosition + deltaTime;
+
+        // 스냅 로직 적용
+        if (allClips.length > 0 && clipDuration > 0) {
+          const snapResult = getSnapPosition(newPosition, clipDuration, allClips, clipId);
+          newPosition = snapResult.position;
+
+          // 스냅 상태 콜백
+          if (onSnapChange) {
+            onSnapChange(snapResult.snapped, snapResult.snapPoint);
+          }
+        }
 
         console.log('[DragClip] 이동 중:', {
           startPosition: startPosition.toFixed(2),
@@ -432,10 +533,16 @@ export const useDragClip = ({
         console.log('[DragClip] ⚠️ 드래그 모드였지만 드래그하지 않음');
       }
 
+      // 스냅 상태 해제
+      if (onSnapChange) {
+        onSnapChange(false, undefined);
+      }
+
       // 상태 초기화
       setIsDraggable(false);
       setLongPressProgress(0);
       isDraggingRef.current = false;
+      isDraggableRef.current = false;
       startPosRef.current = null;
 
       // 이벤트 리스너 제거

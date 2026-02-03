@@ -61,7 +61,7 @@
  * @see TimelineClip - 개별 클립 컴포넌트
  */
 
-import React, { useMemo, useState, useRef, useCallback } from 'react';
+import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft,   // 뒤로가기 아이콘
@@ -75,8 +75,15 @@ import {
   CheckSquare,   // 다중선택 아이콘
   Volume2,       // 볼륨 아이콘
   Pencil,        // 수정 아이콘
+  Check,         // 저장됨 아이콘
+  Loader2,       // 저장 중 아이콘
+  Circle,        // 미저장 아이콘
+  Undo2,         // Undo 아이콘
+  Redo2,         // Redo 아이콘
+  Sparkles,      // AI 어시스턴트 아이콘
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
+import { useHistoryStore } from '../store/useHistoryStore';
 import { TimelineItem } from '../types/golf';
 import { SpeedPanel } from '../components/SpeedPanel';
 import { FilterPanel, FilterSettings } from '../components/FilterPanel';
@@ -84,6 +91,7 @@ import { AudioPanel, AudioSettings } from '../components/AudioPanel';
 import { TextPanel, TextSettings } from '../components/TextPanel';
 import { StickerPanel, StickerSettings } from '../components/StickerPanel';
 import { ExportPanel } from '../components/ExportPanel';
+import { AssistantPanel } from '../components/AssistantPanel';
 import { ClipVolumePanel } from '../components/ClipVolumePanel';
 import { TimelineClip } from '../components/TimelineClip';
 import { DraggableOverlay } from '../components/DraggableOverlay';
@@ -100,7 +108,25 @@ const LABEL_WIDTH = 64;
  * @returns React 컴포넌트
  */
 export const EditorWorkspaceScreen: React.FC = () => {
-  const { currentProject, setCurrentScreen, updateProject, setCurrentProject } = useAppStore();
+  const {
+    currentProject,
+    setCurrentScreen,
+    updateProject,
+    setCurrentProject,
+    saveStatus,
+    setSaveStatus,
+    setLastSavedAt,
+  } = useAppStore();
+
+  // 히스토리 스토어 (Undo/Redo)
+  const {
+    initialize: initializeHistory,
+    pushState: pushHistoryState,
+    undo: historyUndo,
+    redo: historyRedo,
+    canUndo,
+    canRedo,
+  } = useHistoryStore();
   const timelineRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -113,6 +139,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
   );
   const {
     timelineClips,
+    setTimelineClips,
     selectedClipId,
     selectedClip,
     setSelectedClipId,
@@ -152,6 +179,138 @@ export const EditorWorkspaceScreen: React.FC = () => {
   const [editingFilterClip, setEditingFilterClip] = useState<TimelineItem | null>(null);
   const [showStickerPanel, setShowStickerPanel] = useState(false);
   const [editingStickerClip, setEditingStickerClip] = useState<TimelineItem | null>(null);
+  const [showAssistantPanel, setShowAssistantPanel] = useState(false);
+
+  // 스냅 가이드라인 상태
+  const [snapGuide, setSnapGuide] = useState<{ visible: boolean; position: number }>({
+    visible: false,
+    position: 0,
+  });
+
+  /**
+   * 스냅 상태 변경 핸들러
+   * 클립 드래그 시 스냅되면 가이드라인 표시
+   */
+  const handleSnapChange = useCallback((snapped: boolean, snapPoint?: number) => {
+    if (snapped && snapPoint !== undefined) {
+      setSnapGuide({ visible: true, position: snapPoint });
+    } else {
+      setSnapGuide({ visible: false, position: 0 });
+    }
+  }, []);
+
+  // 자동 저장 타이머 ref
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /**
+   * 자동 저장 트리거 함수
+   * 편집 발생 시 호출하여 저장 상태를 관리합니다.
+   */
+  const triggerAutoSave = useCallback(() => {
+    // 이전 타이머 취소
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    // unsaved 상태로 변경
+    setSaveStatus('unsaved');
+
+    // 2초 후 저장 시뮬레이션
+    autoSaveTimerRef.current = setTimeout(() => {
+      setSaveStatus('saving');
+
+      // 0.5초 후 저장 완료
+      setTimeout(() => {
+        setSaveStatus('saved');
+        setLastSavedAt(Date.now());
+      }, 500);
+    }, 2000);
+  }, [setSaveStatus, setLastSavedAt]);
+
+  // 타임라인 변경 감지하여 자동 저장 트리거
+  useEffect(() => {
+    if (timelineClips.length > 0) {
+      triggerAutoSave();
+    }
+  }, [timelineClips]);
+
+  // 컴포넌트 언마운트 시 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, []);
+
+  // 히스토리 초기화 (컴포넌트 마운트 시)
+  const isHistoryInitialized = useRef(false);
+  useEffect(() => {
+    if (!isHistoryInitialized.current && timelineClips.length > 0) {
+      initializeHistory(timelineClips);
+      isHistoryInitialized.current = true;
+    }
+  }, [timelineClips, initializeHistory]);
+
+  // 히스토리 저장용 이전 상태 ref
+  const prevTimelineClipsRef = useRef<TimelineItem[]>(timelineClips);
+
+  // 타임라인 변경 시 히스토리에 저장
+  useEffect(() => {
+    // 초기화 완료 후에만 히스토리 저장
+    if (!isHistoryInitialized.current) return;
+
+    // 이전 상태와 비교하여 실제 변경이 있을 때만 저장
+    const prevClips = prevTimelineClipsRef.current;
+    if (JSON.stringify(prevClips) !== JSON.stringify(timelineClips)) {
+      pushHistoryState(timelineClips);
+      prevTimelineClipsRef.current = timelineClips;
+    }
+  }, [timelineClips, pushHistoryState]);
+
+  /**
+   * Undo 핸들러
+   * 이전 상태로 되돌립니다.
+   */
+  const handleUndo = useCallback(() => {
+    const previousState = historyUndo();
+    if (previousState) {
+      prevTimelineClipsRef.current = previousState; // 히스토리 저장 방지
+      setTimelineClips(previousState);
+      setSelectedClipId(null);
+    }
+  }, [historyUndo, setTimelineClips, setSelectedClipId]);
+
+  /**
+   * Redo 핸들러
+   * 다음 상태로 다시 실행합니다.
+   */
+  const handleRedo = useCallback(() => {
+    const nextState = historyRedo();
+    if (nextState) {
+      prevTimelineClipsRef.current = nextState; // 히스토리 저장 방지
+      setTimelineClips(nextState);
+      setSelectedClipId(null);
+    }
+  }, [historyRedo, setTimelineClips, setSelectedClipId]);
+
+  // 키보드 단축키 지원 (Ctrl+Z, Ctrl+Y)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'z' && !e.shiftKey) {
+          e.preventDefault();
+          handleUndo();
+        } else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
+          e.preventDefault();
+          handleRedo();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleUndo, handleRedo]);
 
   // ============================================
   // 모바일 제스처 (핀치 줌)
@@ -679,6 +838,16 @@ export const EditorWorkspaceScreen: React.FC = () => {
     setShowStickerPanel(false);
   };
 
+  /**
+   * AI 어시스턴트에서 선택한 아이템 추가 핸들러
+   */
+  const handleAddAssistantItems = (items: TimelineItem[]) => {
+    items.forEach((item) => {
+      addClip(item);
+    });
+    setShowAssistantPanel(false);
+  };
+
   // 플레이헤드 시간 계산 함수 (공통)
   // 좌측 레이블(64px)이 타임라인 내부에 있으므로 고려 필요
   const getPlayheadTime = React.useCallback(() => {
@@ -754,6 +923,52 @@ export const EditorWorkspaceScreen: React.FC = () => {
                 {projectTitle}
               </h1>
             )}
+            {/* 자동 저장 상태 표시 */}
+            <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+              {saveStatus === 'saved' && (
+                <>
+                  <Check className="w-3.5 h-3.5 text-gray-400" />
+                  <span className="text-xs text-gray-400">저장됨</span>
+                </>
+              )}
+              {saveStatus === 'saving' && (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 text-golf-green animate-spin" />
+                  <span className="text-xs text-golf-green">저장 중...</span>
+                </>
+              )}
+              {saveStatus === 'unsaved' && (
+                <>
+                  <Circle className="w-3 h-3 text-orange-500 fill-orange-500" />
+                  <span className="text-xs text-orange-500">저장되지 않음</span>
+                </>
+              )}
+            </div>
+          </div>
+          {/* Undo/Redo 버튼 */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleUndo}
+              disabled={!canUndo}
+              className={`w-9 h-9 flex items-center justify-center rounded-lg ${
+                canUndo ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'
+              }`}
+              title="실행 취소 (Ctrl+Z)"
+            >
+              <Undo2 className="w-5 h-5" />
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleRedo}
+              disabled={!canRedo}
+              className={`w-9 h-9 flex items-center justify-center rounded-lg ${
+                canRedo ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'
+              }`}
+              title="다시 실행 (Ctrl+Y)"
+            >
+              <Redo2 className="w-5 h-5" />
+            </motion.button>
           </div>
           <motion.button
             whileTap={{ scale: 0.95 }}
@@ -872,7 +1087,18 @@ export const EditorWorkspaceScreen: React.FC = () => {
         {/* 줌 컨트롤 (고정) */}
         <div className="flex-shrink-0 px-4 py-2 bg-gray-100 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-600 font-medium">타임라인</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-600 font-medium">타임라인</span>
+              {/* AI 어시스턴트 버튼 */}
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowAssistantPanel(true)}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg bg-golf-green/10 text-golf-green hover:bg-golf-green/20 transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">AI</span>
+              </motion.button>
+            </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setTimelineZoom(Math.max(TIMELINE_CONFIG.ZOOM_MIN, timelineZoom - TIMELINE_CONFIG.ZOOM_STEP))}
@@ -991,10 +1217,12 @@ export const EditorWorkspaceScreen: React.FC = () => {
                       isDraggable={true}
                       leftPadding={leftPadding}
                       isOverlapping={overlappingClipIds.has(clip.id)}
+                      allClips={timelineClips}
                       onSelect={setSelectedClipId}
                       onMove={moveClip}
                       onTrimStart={trimClipStart}
                       onTrimEnd={trimClipEnd}
+                      onSnapChange={handleSnapChange}
                     />
                   ))}
               </div>
@@ -1022,6 +1250,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
                       isDraggable={true}
                       leftPadding={leftPadding}
                       isOverlapping={overlappingClipIds.has(clip.id)}
+                      allClips={timelineClips}
                       onSelect={setSelectedClipId}
                       onDoubleClick={(clip) => {
                         setEditingTextClip(clip);
@@ -1030,6 +1259,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
                       onMove={moveClip}
                       onTrimStart={trimClipStart}
                       onTrimEnd={trimClipEnd}
+                      onSnapChange={handleSnapChange}
                     />
                   ))
                 }
@@ -1058,6 +1288,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
                       isDraggable={true}
                       leftPadding={leftPadding}
                       isOverlapping={overlappingClipIds.has(clip.id)}
+                      allClips={timelineClips}
                       onSelect={setSelectedClipId}
                       onDoubleClick={(clip) => {
                         setEditingAudioClip(clip);
@@ -1066,6 +1297,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
                       onMove={moveClip}
                       onTrimStart={trimClipStart}
                       onTrimEnd={trimClipEnd}
+                      onSnapChange={handleSnapChange}
                     />
                   ))
                 }
@@ -1094,6 +1326,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
                       isDraggable={true}
                       leftPadding={leftPadding}
                       isOverlapping={overlappingClipIds.has(clip.id)}
+                      allClips={timelineClips}
                       onSelect={setSelectedClipId}
                       onDoubleClick={(clip) => {
                         setEditingFilterClip(clip);
@@ -1102,11 +1335,24 @@ export const EditorWorkspaceScreen: React.FC = () => {
                       onMove={moveClip}
                       onTrimStart={trimClipStart}
                       onTrimEnd={trimClipEnd}
+                      onSnapChange={handleSnapChange}
                     />
                   ))
                 }
               </div>
             </div>
+
+            {/* 스냅 가이드라인 */}
+            {snapGuide.visible && (
+              <div
+                className="absolute top-6 bottom-0 w-0.5 bg-green-500 z-40 pointer-events-none"
+                style={{
+                  left: `${snapGuide.position * TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom + leftPadding + LABEL_WIDTH}px`,
+                }}
+              >
+                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-green-500 rounded-full" />
+              </div>
+            )}
 
             {/* Sticker Track */}
             <div className="h-12 bg-gray-50 border-b border-gray-200 relative timeline-background flex">
@@ -1130,6 +1376,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
                       isDraggable={true}
                       leftPadding={leftPadding}
                       isOverlapping={overlappingClipIds.has(clip.id)}
+                      allClips={timelineClips}
                       onSelect={setSelectedClipId}
                       onDoubleClick={(clip) => {
                         setEditingStickerClip(clip);
@@ -1138,6 +1385,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
                       onMove={moveClip}
                       onTrimStart={trimClipStart}
                       onTrimEnd={trimClipEnd}
+                      onSnapChange={handleSnapChange}
                     />
                   ))
                 }
@@ -1351,6 +1599,17 @@ export const EditorWorkspaceScreen: React.FC = () => {
               position: editingStickerClip.stickerPosition || { x: 50, y: 50 },
               duration: editingStickerClip.duration,
             } : undefined}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* AI Assistant Panel */}
+      <AnimatePresence>
+        {showAssistantPanel && (
+          <AssistantPanel
+            onAdd={handleAddAssistantItems}
+            onClose={() => setShowAssistantPanel(false)}
+            currentTime={getPlayheadTime()}
           />
         )}
       </AnimatePresence>
