@@ -1,6 +1,6 @@
 # GolfSnap 기능별 상세 가이드
 
-> 최종 업데이트: 2026-02-02
+> 최종 업데이트: 2026-02-03
 
 이 문서는 GolfSnap 모바일 영상 편집기의 모든 기능을 상세하게 설명합니다.
 
@@ -31,9 +31,12 @@ GolfSnap은 스크린골프 영상 편집을 위한 모바일 웹 프로토타�
 - **리플 편집**: 클립 길이 변경 시 뒤 클립들이 자동으로 이동
 - **클립 볼륨 조절**: 비디오 클립별 원본 오디오 볼륨/음소거
 - **클립 오버랩 표시**: 같은 트랙 내 겹침 시각화
+- **클립 스냅**: 드래그 시 다른 클립 경계에 자동 스냅
+- **실행 취소/다시 실행**: 히스토리 스택 기반 (최대 30단계)
+- **AI 어시스턴트**: 메타데이터 기반 스티커/텍스트 자동 추천
 - **모바일 최적화**: 터치 제스처 (핀치 줌, 롱프레스, 스와이프)
 
-### 현재 완성도: 92%
+### 현재 완성도: 97%
 
 | 기능 | 상태 |
 |------|------|
@@ -42,6 +45,10 @@ GolfSnap은 스크린골프 영상 편집을 위한 모바일 웹 프로토타�
 | 타임라인 편집 | ✅ 100% |
 | 클립 조작 | ✅ 100% |
 | 클립 볼륨 조절 | ✅ 100% |
+| 실행 취소/다시 실행 | ✅ 100% |
+| 자동 저장 UI | ✅ 100% |
+| 클립 스냅 | ✅ 100% |
+| AI 어시스턴트 | ✅ 100% |
 | 내보내기 플로우 | ✅ 100% |
 | 미리보기 | ⚠️ 50% (UI만) |
 | 내보내기 렌더링 | ⚠️ 50% (시뮬레이션) |
@@ -102,6 +109,21 @@ GolfSnap은 스크린골프 영상 편집을 위한 모바일 웹 프로토타�
 | 필터 | 🟣 보라색 | 색상 필터 적용 |
 | 스티커 | 🩷 핑크색 | 이모지 스티커 추가 |
 
+#### 클립 스냅
+
+드래그 중 다른 클립 경계에 가까워지면 자동으로 스냅됩니다:
+- 스냅 임계값: 0.3초
+- 시각적 가이드라인 표시
+- 햅틱 피드백 (모바일)
+
+```
+드래그 중:
+[클립1]     [클립2]
+      │← 0.3초 이내 →│
+          ↓ 자동 스냅
+[클립1][클립2]
+```
+
 #### 클립 오버랩 표시
 
 같은 트랙 내에서 클립이 겹치면 시각적으로 표시됩니다:
@@ -146,7 +168,66 @@ GolfSnap은 스크린골프 영상 편집을 위한 모바일 웹 프로토타�
 | **이동** | 롱프레스 후 드래그 | 모든 트랙 |
 | **트리밍** | 좌우 핸들러 드래그 | 모든 트랙 |
 
-### 4.3 속도 조절
+### 4.3 실행 취소/다시 실행
+
+```
+히스토리 스택 (최대 30단계)
+┌────────────────────────────────────────┐
+│ [상태1] → [상태2] → [상태3] → [현재]    │
+│                        ↑                │
+│                    Undo (Ctrl+Z)        │
+│                    Redo (Ctrl+Y)        │
+└────────────────────────────────────────┘
+```
+
+- 모든 타임라인 변경 사항 추적
+- 키보드 단축키: Ctrl+Z (실행 취소), Ctrl+Y (다시 실행)
+- 헤더에 Undo/Redo 버튼 표시
+- 비활성화 상태 시각적 표시
+
+### 4.4 자동 저장 UI
+
+저장 상태 시각적 표시:
+- ✅ 저장됨 (녹색 체크)
+- ⏳ 저장 중 (스피너)
+- 🟠 저장되지 않음 (주황색 점)
+
+### 4.5 AI 어시스턴트
+
+메타데이터 기반 스티커/텍스트 자동 추천:
+
+```
+샷 메타데이터 분석:
+- 비거리: 285yd
+- 볼 스피드: 168mph
+- 클럽: Driver
+- 홀아웃: 버디
+
+→ AI 추천:
+- 🦅 버디 스티커
+- 🚀 로켓 스피드 스티커
+- "BIRDIE!" 텍스트
+- "285yd Monster Drive" 텍스트
+```
+
+기능:
+- 패널 열릴 때 자동 분석
+- 다중 스티커/텍스트 선택 가능
+- 전체 선택/해제
+- 다시 분석 버튼
+
+### 4.6 텍스트 애니메이션
+
+| 애니메이션 | 설명 |
+|------------|------|
+| fade-in | 페이드 인 |
+| slide-up | 아래에서 위로 슬라이드 |
+| slide-down | 위에서 아래로 슬라이드 |
+| zoom-in | 확대되면서 등장 |
+| bounce | 바운스 효과 |
+| typewriter | 타자기 효과 |
+
+### 4.7 속도 조절
 
 ```
 속도 범위: 0.1x ~ 8x
@@ -159,7 +240,7 @@ GolfSnap은 스크린골프 영상 편집을 위한 모바일 웹 프로토타�
 계산식: 재생 길이 = 원본 길이 / 속도
 ```
 
-### 4.4 트리밍
+### 4.8 트리밍
 
 #### 비디오 트랙
 - **왼쪽 핸들러**: 시작점 조정 (원본 startTime 이전으로 불가)
@@ -171,13 +252,13 @@ GolfSnap은 스크린골프 영상 편집을 위한 모바일 웹 프로토타�
 - **오른쪽 핸들러**: 길이만 조정
 - 비디오 범위를 벗어날 수 없음
 
-### 4.5 드래그 이동
+### 4.9 드래그 이동
 
 ```
 동작 흐름:
 1. 클립 터치 (500ms 대기)
 2. 롱프레스 완료 → 드래그 모드 활성화
-3. 드래그하여 위치 이동
+3. 드래그하여 위치 이동 (스냅 포인트 자동 적용)
 4. 손가락 떼면 완료
 
 비디오 트랙: 순서 교환 방식 (항상 붙어있음)
@@ -198,17 +279,20 @@ src/
 │   └── golf.ts              # 타입 정의 (ShotData, TimelineItem, Project 등)
 │
 ├── store/
-│   └── useAppStore.ts       # Zustand 전역 상태 관리
+│   ├── useAppStore.ts       # Zustand 전역 상태 관리
+│   └── useHistoryStore.ts   # Undo/Redo 히스토리 관리
 │
 ├── constants/
-│   └── editor.ts            # 에디터 상수 (줌, 속도, 픽셀 등)
+│   ├── editor.ts            # 에디터 상수 (줌, 속도, 픽셀, 스냅 임계값)
+│   └── assistantRules.ts    # AI 어시스턴트 규칙 정의
 │
 ├── hooks/
 │   ├── useTimeline.ts       # 타임라인 편집 핵심 로직
-│   ├── useDragClip.ts       # 클립 드래그 제스처
+│   ├── useDragClip.ts       # 클립 드래그 제스처 (스냅 포함)
 │   ├── usePinchZoom.ts      # 핀치 줌 제스처
 │   ├── useLongPress.ts      # 롱프레스 감지
-│   └── useTouchScroll.ts    # 터치 스크롤
+│   ├── useTouchScroll.ts    # 터치 스크롤
+│   └── useSmartAssistant.ts # AI 어시스턴트 훅
 │
 ├── screens/
 │   ├── CreateDashboardScreen.tsx   # 프로젝트 대시보드
@@ -229,6 +313,7 @@ src/
     ├── AudioPanel.tsx        # 오디오 패널
     ├── TextPanel.tsx         # 텍스트 패널
     ├── StickerPanel.tsx      # 스티커 패널
+    ├── AssistantPanel.tsx    # AI 어시스턴트 패널
     ├── ExportPanel.tsx       # 내보내기 패널
     ├── DraggableOverlay.tsx  # 드래그 가능한 오버레이
     └── ShareDialog.tsx       # 공유 다이얼로그
@@ -263,6 +348,7 @@ interface TimelineItem {
   textFontSize?: number;
   textColor?: string;
   textPosition?: { x: number; y: number };
+  textAnimation?: TextAnimationType;
 
   // 오디오 전용
   audioVolume?: number;
@@ -298,6 +384,22 @@ interface Project {
 }
 ```
 
+### 6.3 ShotData (샷 메타데이터)
+
+```typescript
+interface ShotData {
+  distance: number;        // 비거리 (yards)
+  ballSpeed: number;       // 볼 스피드 (mph)
+  launchAngle: number;     // 발사각 (degrees)
+  accuracy: number;        // 정확도 (%)
+  club: ClubType;          // 클럽 종류
+  spinRate?: number;       // 스핀량 (rpm)
+  direction?: number;      // 방향각 (degrees)
+  remainingDistance?: number; // 핀까지 남은 거리
+  holeResult?: 'hole-in-one' | 'eagle' | 'birdie' | 'par' | 'bogey' | 'double-bogey';
+}
+```
+
 ---
 
 ## 7. 훅(Hooks) 상세
@@ -327,27 +429,49 @@ const {
 
 ### 7.2 useDragClip
 
-**롱프레스 후 드래그 제스처**
+**롱프레스 후 드래그 제스처 (스냅 포함)**
 
 ```typescript
 const { handleTouchStart, handleMouseDown, isDraggable, longPressProgress } = useDragClip({
   clipId: 'clip-1',
   initialPosition: 10,
+  clipDuration: 5,
   zoom: 1,
   pixelsPerSecond: 10,
   onMove: (id, pos) => moveClip(id, pos),
   onSelect: (id) => setSelectedClipId(id),
   longPressDelay: 500,
+  allClips: timelineClips,
+  onSnapChange: (snapped, point) => setSnapGuide({ visible: snapped, position: point }),
 });
 ```
 
 동작:
 1. 터치/클릭 시작 → 타이머 시작
 2. 500ms 경과 → 드래그 모드 활성화
-3. 드래그 중 → onMove 콜백 호출
-4. 터치/클릭 종료 → 완료
+3. 드래그 중 → 스냅 포인트 계산 → onMove 콜백 호출
+4. 스냅 시 → 햅틱 피드백 + 가이드라인 표시
+5. 터치/클릭 종료 → 완료
 
-### 7.3 usePinchZoom
+### 7.3 useSmartAssistant
+
+**AI 어시스턴트 훅**
+
+```typescript
+const {
+  state,                    // 현재 상태
+  analyzeShotData,          // 샷 데이터 분석
+  toggleSuggestion,         // 제안 선택/해제
+  selectAll,                // 전체 선택
+  deselectAll,              // 전체 해제
+  getSelectedAsTimelineItems, // 선택된 제안을 타임라인 아이템으로 변환
+  stickerSuggestions,       // 스티커 제안 목록
+  textSuggestions,          // 텍스트 제안 목록
+  selectedCount,            // 선택된 제안 수
+} = useSmartAssistant();
+```
+
+### 7.4 usePinchZoom
 
 **두 손가락 핀치 줌 제스처**
 
@@ -374,10 +498,12 @@ usePinchZoom({
 | clip | TimelineItem | 클립 데이터 |
 | isSelected | boolean | 선택 여부 |
 | zoom | number | 줌 레벨 |
+| allClips | TimelineItem[] | 모든 클립 (스냅용) |
 | onSelect | function | 선택 콜백 |
 | onMove | function | 이동 콜백 |
 | onTrimStart | function | 시작점 트림 콜백 |
 | onTrimEnd | function | 끝점 트림 콜백 |
+| onSnapChange | function | 스냅 상태 변경 콜백 |
 
 트랙별 색상:
 - 영상: 🔵 #3b82f6
@@ -386,22 +512,22 @@ usePinchZoom({
 - 필터: 🟣 #a855f7
 - 스티커: 🩷 #ec4899
 
-### 8.2 TrimHandle
+### 8.2 AssistantPanel
 
-**클립 양쪽 트림 핸들러**
+**AI 어시스턴트 패널**
 
 | Props | 타입 | 설명 |
 |-------|------|------|
-| side | 'left' \| 'right' | 핸들러 위치 |
-| clipId | string | 클립 ID |
-| zoom | number | 줌 레벨 |
-| onTrim | function | 트림 콜백 |
+| onAdd | function | 선택된 제안 추가 콜백 |
+| onClose | function | 패널 닫기 콜백 |
+| currentTime | number | 현재 타임라인 시간 |
+| shotMetadata | Partial<ShotData> | 샷 메타데이터 (선택적) |
 
 ---
 
 ## 9. 상태 관리
 
-### Zustand 스토어 구조
+### 9.1 Zustand 스토어 구조 (useAppStore)
 
 ```typescript
 interface AppState {
@@ -424,7 +550,24 @@ interface AppState {
   addProject: (project) => void;
   updateProject: (id, updates) => void;
   deleteProject: (id) => void;
-  // ...
+}
+```
+
+### 9.2 히스토리 스토어 (useHistoryStore)
+
+```typescript
+interface HistoryState {
+  past: TimelineItem[][];     // 이전 상태들
+  present: TimelineItem[];    // 현재 상태
+  future: TimelineItem[][];   // 다음 상태들 (Redo용)
+
+  // 액션들
+  initialize: (clips) => void;
+  pushState: (clips) => void;
+  undo: () => TimelineItem[] | null;
+  redo: () => TimelineItem[] | null;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 ```
 
@@ -443,10 +586,19 @@ interface AppState {
 | 핀치 줌 | 확대/축소 | 타임라인 |
 | 드래그 | 이동/트림 | 클립, 핸들러 |
 
-### 10.2 모바일 최적화
+### 10.2 키보드 단축키
+
+| 단축키 | 동작 |
+|--------|------|
+| Ctrl+Z | 실행 취소 (Undo) |
+| Ctrl+Y | 다시 실행 (Redo) |
+| Ctrl+Shift+Z | 다시 실행 (Redo) |
+| ESC | 패널 닫기 |
+
+### 10.3 모바일 최적화
 
 - **터치 영역**: 최소 44px (Apple HIG 권장)
-- **햅틱 피드백**: 롱프레스 완료 시 진동
+- **햅틱 피드백**: 롱프레스 완료 시, 스냅 시 진동
 - **스크롤 방지**: 드래그 중 페이지 스크롤 차단
 - **passive: false**: preventDefault 활성화
 
