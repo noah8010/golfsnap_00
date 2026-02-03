@@ -74,6 +74,7 @@ import {
   Gauge,         // 속도 아이콘
   CheckSquare,   // 다중선택 아이콘
   Volume2,       // 볼륨 아이콘
+  Pencil,        // 수정 아이콘
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { TimelineItem } from '../types/golf';
@@ -408,6 +409,35 @@ export const EditorWorkspaceScreen: React.FC = () => {
     // TODO: 다중선택 기능 구현 (docs/TIMELINE_IMPROVEMENTS.md 참고)
     alert('다중선택 기능은 추후 구현 예정입니다');
   };
+
+  /**
+   * 선택된 클립 수정 핸들러
+   * 트랙 타입에 따라 해당 편집 패널을 열고 편집 모드로 전환
+   */
+  const handleEditClip = useCallback(() => {
+    if (!selectedClip) return;
+
+    switch (selectedClip.track) {
+      case 'text':
+        setEditingTextClip(selectedClip);
+        setShowTextPanel(true);
+        break;
+      case 'audio':
+        setEditingAudioClip(selectedClip);
+        setShowAudioPanel(true);
+        break;
+      case 'filter':
+        setEditingFilterClip(selectedClip);
+        setShowFilterPanel(true);
+        break;
+      case 'sticker':
+        setEditingStickerClip(selectedClip);
+        setShowStickerPanel(true);
+        break;
+      default:
+        break;
+    }
+  }, [selectedClip]);
 
   // ============================================
   // 패널 핸들러
@@ -1188,6 +1218,18 @@ export const EditorWorkspaceScreen: React.FC = () => {
             >
               <Volume2 className="w-5 h-5 text-gray-700" />
               <span className="text-xs text-gray-600">볼륨</span>
+            </motion.button>
+          )}
+
+          {/* 수정 - 텍스트/오디오/필터/스티커 트랙만 */}
+          {selectedClip && (selectedClip.track === 'text' || selectedClip.track === 'audio' || selectedClip.track === 'filter' || selectedClip.track === 'sticker') && (
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={handleEditClip}
+              className="flex flex-col items-center gap-0.5 min-w-0"
+            >
+              <Pencil className="w-5 h-5 text-gray-700" />
+              <span className="text-xs text-gray-600">수정</span>
             </motion.button>
           )}
 
