@@ -2,12 +2,13 @@
  * @file AssistantPanel.tsx
  * @description 지능형 어시스턴트 패널 컴포넌트
  *
- * 골프 샷 메타데이터를 입력하면 AI가 자동으로 스티커와 텍스트를 제안합니다.
+ * 영상의 메타데이터를 기반으로 AI가 자동으로 스티커와 텍스트를 제안합니다.
+ * 시나리오 선택 없이 자동 분석됩니다.
  */
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Sparkles, Check, Loader2, Wand2 } from 'lucide-react';
+import { X, Sparkles, Check, Loader2, RefreshCw } from 'lucide-react';
 import { ShotData, TimelineItem } from '../types/golf';
 import { useSmartAssistant } from '../hooks/useSmartAssistant';
 
@@ -18,87 +19,65 @@ interface AssistantPanelProps {
   onClose: () => void;
   /** 현재 타임라인 시간 (새 아이템 위치) */
   currentTime: number;
+  /** 영상의 샷 메타데이터 (선택적) */
+  shotMetadata?: Partial<ShotData>;
 }
 
 /**
- * 샘플 샷 데이터 프리셋
+ * 시뮬레이션용 샘플 메타데이터 생성
+ * 프로토타입에서 실제 메타데이터가 없을 때 사용
  */
-const SAMPLE_PRESETS: { id: string; name: string; data: Partial<ShotData> }[] = [
-  {
-    id: 'hole-in-one',
-    name: '홀인원',
-    data: {
-      distance: 165,
-      ballSpeed: 145,
-      launchAngle: 22,
-      accuracy: 100,
-      club: 'PW',
-      holeResult: 'hole-in-one',
-      remainingDistance: 0,
-    },
-  },
-  {
-    id: 'eagle',
-    name: '이글',
-    data: {
-      distance: 180,
-      ballSpeed: 155,
-      launchAngle: 18,
-      accuracy: 95,
-      club: '7Iron',
-      holeResult: 'eagle',
-      remainingDistance: 3,
-    },
-  },
-  {
-    id: 'birdie',
-    name: '버디',
-    data: {
-      distance: 150,
-      ballSpeed: 135,
-      launchAngle: 20,
-      accuracy: 90,
-      club: '8Iron',
-      holeResult: 'birdie',
-      remainingDistance: 5,
-    },
-  },
-  {
-    id: 'monster-drive',
-    name: '몬스터 드라이브',
-    data: {
-      distance: 310,
-      ballSpeed: 175,
-      launchAngle: 12,
-      accuracy: 85,
+const generateSimulatedMetadata = (): Partial<ShotData> => {
+  // 여러 시나리오 중 랜덤 선택
+  const scenarios: Partial<ShotData>[] = [
+    {
+      distance: 285,
+      ballSpeed: 168,
+      launchAngle: 13,
+      accuracy: 92,
       club: 'Driver',
-      spinRate: 2500,
+      spinRate: 2600,
+      holeResult: 'birdie',
+      remainingDistance: 8,
     },
-  },
-  {
-    id: 'pin-attack',
-    name: '핀 어택',
-    data: {
-      distance: 145,
-      ballSpeed: 130,
-      launchAngle: 25,
+    {
+      distance: 305,
+      ballSpeed: 172,
+      launchAngle: 11,
+      accuracy: 88,
+      club: 'Driver',
+      spinRate: 2400,
+    },
+    {
+      distance: 155,
+      ballSpeed: 138,
+      launchAngle: 22,
+      accuracy: 96,
+      club: '8Iron',
+      spinRate: 4200,
+      holeResult: 'eagle',
+      remainingDistance: 2,
+    },
+    {
+      distance: 142,
+      ballSpeed: 132,
+      launchAngle: 24,
       accuracy: 98,
       club: '9Iron',
-      remainingDistance: 2,
-      spinRate: 4000,
+      spinRate: 4500,
+      remainingDistance: 4,
+      holeResult: 'birdie',
     },
-  },
-  {
-    id: 'custom',
-    name: '직접 입력',
-    data: {},
-  },
-];
+  ];
+
+  return scenarios[Math.floor(Math.random() * scenarios.length)];
+};
 
 export const AssistantPanel: React.FC<AssistantPanelProps> = ({
   onAdd,
   onClose,
   currentTime,
+  shotMetadata,
 }) => {
   const {
     state,
@@ -110,18 +89,16 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
     stickerSuggestions,
     textSuggestions,
     selectedCount,
-    reset,
   } = useSmartAssistant();
 
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
-  const [customData, setCustomData] = useState<Partial<ShotData>>({
-    distance: 250,
-    ballSpeed: 155,
-    launchAngle: 14,
-    accuracy: 85,
-    spinRate: 2800,
-    club: 'Driver',
-  });
+  const [currentMetadata, setCurrentMetadata] = useState<Partial<ShotData> | null>(null);
+
+  // 패널 열릴 때 자동 분석
+  useEffect(() => {
+    const metadata = shotMetadata || generateSimulatedMetadata();
+    setCurrentMetadata(metadata);
+    analyzeShotData(metadata);
+  }, [shotMetadata, analyzeShotData]);
 
   // ESC 키로 패널 닫기
   useEffect(() => {
@@ -136,33 +113,69 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
   }, [onClose]);
 
   /**
-   * 프리셋 선택 핸들러
+   * 메타데이터 다시 분석 (다른 시나리오로)
    */
-  const handlePresetSelect = (presetId: string) => {
-    setSelectedPreset(presetId);
-    const preset = SAMPLE_PRESETS.find((p) => p.id === presetId);
-    if (preset && presetId !== 'custom') {
-      analyzeShotData(preset.data);
-    } else if (presetId === 'custom') {
-      reset();
-    }
-  };
-
-  /**
-   * 커스텀 데이터 분석 핸들러
-   */
-  const handleAnalyzeCustom = () => {
-    analyzeShotData(customData);
+  const handleRefreshAnalysis = () => {
+    const newMetadata = generateSimulatedMetadata();
+    setCurrentMetadata(newMetadata);
+    analyzeShotData(newMetadata);
   };
 
   /**
    * 선택된 제안 추가 핸들러
+   * 각 아이템을 약간씩 다른 위치에 배치
    */
   const handleAddSelected = () => {
     if (selectedCount === 0) return;
+
     const items = getSelectedAsTimelineItems(currentTime);
-    onAdd(items);
+
+    // 각 아이템의 위치를 트랙별로 분리하여 겹치지 않게 배치
+    const adjustedItems = items.map((item, index) => ({
+      ...item,
+      // 고유 ID 보장
+      id: `${item.track}-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+      clipId: `${item.track}-clip-${Date.now()}-${index}`,
+    }));
+
+    onAdd(adjustedItems);
     onClose();
+  };
+
+  /**
+   * 메타데이터 요약 표시
+   */
+  const renderMetadataSummary = () => {
+    if (!currentMetadata) return null;
+
+    const items = [];
+    if (currentMetadata.distance) items.push(`${currentMetadata.distance}yd`);
+    if (currentMetadata.ballSpeed) items.push(`${currentMetadata.ballSpeed}mph`);
+    if (currentMetadata.club) items.push(currentMetadata.club);
+    if (currentMetadata.holeResult) {
+      const resultNames: Record<string, string> = {
+        'hole-in-one': '홀인원',
+        'eagle': '이글',
+        'birdie': '버디',
+        'par': '파',
+        'bogey': '보기',
+        'double-bogey': '더블보기',
+      };
+      items.push(resultNames[currentMetadata.holeResult] || currentMetadata.holeResult);
+    }
+
+    return (
+      <div className="flex flex-wrap gap-2">
+        {items.map((item, idx) => (
+          <span
+            key={idx}
+            className="px-2 py-1 bg-[#3d4554] rounded-lg text-xs text-white"
+          >
+            {item}
+          </span>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -192,113 +205,21 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
         {/* Content Scroll Area */}
         <div className="flex-1 overflow-y-auto scrollbar-hide">
           <div className="px-6 py-6 space-y-6">
-            {/* 프리셋 선택 */}
+            {/* 감지된 메타데이터 표시 */}
             <div>
-              <h4 className="text-sm font-semibold text-gray-400 mb-3">샷 시나리오 선택</h4>
-              <div className="grid grid-cols-3 gap-2">
-                {SAMPLE_PRESETS.map((preset) => (
-                  <motion.button
-                    key={preset.id}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handlePresetSelect(preset.id)}
-                    className={`py-3 px-2 rounded-xl transition-colors text-center ${
-                      selectedPreset === preset.id
-                        ? 'bg-golf-green text-white'
-                        : 'bg-[#3d4554] text-gray-300 hover:bg-[#4a5262]'
-                    }`}
-                  >
-                    <div className="text-sm font-medium truncate">{preset.name}</div>
-                  </motion.button>
-                ))}
-              </div>
-            </div>
-
-            {/* 커스텀 입력 (직접 입력 선택 시) */}
-            {selectedPreset === 'custom' && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="space-y-4"
-              >
-                <h4 className="text-sm font-semibold text-gray-400">샷 데이터 입력</h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">비거리 (yd)</label>
-                    <input
-                      type="number"
-                      value={customData.distance || ''}
-                      onChange={(e) =>
-                        setCustomData({ ...customData, distance: Number(e.target.value) })
-                      }
-                      className="w-full px-3 py-2 bg-[#3d4554] border border-gray-600 rounded-lg text-white text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">볼 스피드 (mph)</label>
-                    <input
-                      type="number"
-                      value={customData.ballSpeed || ''}
-                      onChange={(e) =>
-                        setCustomData({ ...customData, ballSpeed: Number(e.target.value) })
-                      }
-                      className="w-full px-3 py-2 bg-[#3d4554] border border-gray-600 rounded-lg text-white text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">발사각 (°)</label>
-                    <input
-                      type="number"
-                      value={customData.launchAngle || ''}
-                      onChange={(e) =>
-                        setCustomData({ ...customData, launchAngle: Number(e.target.value) })
-                      }
-                      className="w-full px-3 py-2 bg-[#3d4554] border border-gray-600 rounded-lg text-white text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">정확도 (%)</label>
-                    <input
-                      type="number"
-                      value={customData.accuracy || ''}
-                      onChange={(e) =>
-                        setCustomData({ ...customData, accuracy: Number(e.target.value) })
-                      }
-                      className="w-full px-3 py-2 bg-[#3d4554] border border-gray-600 rounded-lg text-white text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">스핀량 (rpm)</label>
-                    <input
-                      type="number"
-                      value={customData.spinRate || ''}
-                      onChange={(e) =>
-                        setCustomData({ ...customData, spinRate: Number(e.target.value) })
-                      }
-                      className="w-full px-3 py-2 bg-[#3d4554] border border-gray-600 rounded-lg text-white text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">남은 거리 (yd)</label>
-                    <input
-                      type="number"
-                      value={customData.remainingDistance || ''}
-                      onChange={(e) =>
-                        setCustomData({ ...customData, remainingDistance: Number(e.target.value) })
-                      }
-                      className="w-full px-3 py-2 bg-[#3d4554] border border-gray-600 rounded-lg text-white text-sm"
-                    />
-                  </div>
-                </div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-400">감지된 샷 데이터</h4>
                 <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleAnalyzeCustom}
-                  className="w-full py-3 rounded-xl bg-golf-green/80 text-white font-semibold flex items-center justify-center gap-2"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleRefreshAnalysis}
+                  className="flex items-center gap-1 text-xs text-golf-green hover:text-golf-green/80"
                 >
-                  <Wand2 className="w-4 h-4" />
-                  AI 분석하기
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  다시 분석
                 </motion.button>
-              </motion.div>
-            )}
+              </div>
+              {renderMetadataSummary()}
+            </div>
 
             {/* 로딩 상태 */}
             {state.isLoading && (
@@ -410,20 +331,13 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
             )}
 
             {/* 제안 없음 메시지 */}
-            {!state.isLoading && selectedPreset && selectedPreset !== 'custom' && state.suggestions.length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-sm text-gray-400">제안을 생성할 수 없습니다.</p>
-              </div>
-            )}
-
-            {/* 초기 안내 */}
-            {!selectedPreset && (
+            {!state.isLoading && state.suggestions.length === 0 && (
               <div className="text-center py-8">
                 <Sparkles className="w-12 h-12 text-gray-600 mx-auto mb-3" />
                 <p className="text-sm text-gray-400">
-                  샷 시나리오를 선택하면
+                  메타데이터를 분석할 수 없습니다.
                   <br />
-                  AI가 스티커와 텍스트를 추천해드립니다.
+                  다시 분석을 시도해주세요.
                 </p>
               </div>
             )}
