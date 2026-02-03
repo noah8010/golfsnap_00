@@ -91,6 +91,9 @@ import { useTimeline } from '../hooks/useTimeline';
 import { usePinchZoom } from '../hooks/usePinchZoom';
 import { TIMELINE_CONFIG, INITIAL_TIMELINE_CLIPS } from '../constants/editor';
 
+/** 좌측 트랙 레이블 너비 (px) */
+const LABEL_WIDTH = 64;
+
 /**
  * 에디터 워크스페이스 화면 컴포넌트
  *
@@ -181,7 +184,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
   }, [timelineClips]);
 
   // 타임라인 컨테이너 너비 (모바일 기준 고정값 사용)
-  const MOBILE_TIMELINE_WIDTH = 393 - 64; // 모바일 너비 - 좌측 레이블(64px)
+  const MOBILE_TIMELINE_WIDTH = 393 - LABEL_WIDTH; // 모바일 너비 - 좌측 레이블
   
   // 스크롤 가능한 타임라인 너비 계산
   const { scrollableWidth, leftPadding } = useMemo(() => {
@@ -336,7 +339,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
       if (!timelineRef.current) return;
       const containerWidth = timelineRef.current.clientWidth;
       const centerOffset = containerWidth / 2;
-      const labelWidth = 64; // 좌측 레이블 너비
+      const labelWidth = LABEL_WIDTH;
 
       // scrollLeft를 직접 읽어서 최신 값 사용
       let currentScrollLeft = timelineRef.current.scrollLeft;
@@ -590,15 +593,6 @@ export const EditorWorkspaceScreen: React.FC = () => {
       // 위치를 비디오 범위 내로 제한 (중앙 플레이헤드 기준)
       const clampedPosition = Math.max(0, Math.min(playheadTime, videoEnd - finalDuration));
 
-      console.log('[TextClip] 생성:', {
-        playheadTime,
-        videoEnd,
-        requestedDuration: duration,
-        finalDuration,
-        clampedPosition,
-        range: `${clampedPosition}~${clampedPosition + finalDuration}초`
-      });
-
       // 새 텍스트 클립 생성 (중앙 플레이헤드 위치, 비디오 범위 내)
       const newTextClip: TimelineItem = {
         id: `text-${Date.now()}`,
@@ -692,36 +686,30 @@ export const EditorWorkspaceScreen: React.FC = () => {
 
     const containerWidth = timelineRef.current.clientWidth;
     const centerOffset = containerWidth / 2;
-    const labelWidth = 64; // 좌측 레이블 너비
-
     // scrollLeft를 직접 읽어서 최신 값 사용
     let currentScrollLeft = timelineRef.current.scrollLeft;
 
-    // scrollLeft가 0이면 아직 초기화 안된 것 → leftPadding + labelWidth 사용
+    // scrollLeft가 0이면 아직 초기화 안된 것 → leftPadding + LABEL_WIDTH 사용
     if (currentScrollLeft === 0 && leftPadding > 0) {
-      currentScrollLeft = leftPadding + labelWidth;
+      currentScrollLeft = leftPadding + LABEL_WIDTH;
       timelineRef.current.scrollLeft = currentScrollLeft;
       setScrollOffset(currentScrollLeft);
     }
 
     const playheadPixelPosition = currentScrollLeft + centerOffset;
-    const actualTimelinePosition = playheadPixelPosition - leftPadding - labelWidth;
+    const actualTimelinePosition = playheadPixelPosition - leftPadding - LABEL_WIDTH;
     const playheadTime = actualTimelinePosition / (TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom);
 
     return Math.max(0, playheadTime);
   }, [leftPadding, timelineZoom]);
 
   // 초기 스크롤 위치 설정 (0초가 중앙에 오도록)
-  // 좌측 레이블(64px)이 타임라인 내부에 있으므로 추가 오프셋 필요
-  const LABEL_WIDTH = 64;
   React.useLayoutEffect(() => {
     if (timelineRef.current && leftPadding > 0) {
       // 좌측 레이블 + 좌측 여백으로 스크롤하여 0초를 중앙에 배치
       const initialScroll = leftPadding + LABEL_WIDTH;
       timelineRef.current.scrollLeft = initialScroll;
-      // scrollOffset state도 직접 업데이트 (onScroll 이벤트 없이)
       setScrollOffset(initialScroll);
-      console.log('[Timeline] 초기 스크롤 위치 설정:', initialScroll);
     }
   }, [leftPadding, timelineZoom]); // zoom 변경 시에도 재조정
 
@@ -914,7 +902,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
             const containerWidth = target.clientWidth;
             const centerOffset = containerWidth / 2;
             const playheadPixelPosition = target.scrollLeft + centerOffset;
-            const actualTimelinePosition = playheadPixelPosition - leftPadding - 64; // 64px = 좌측 레이블 너비
+            const actualTimelinePosition = playheadPixelPosition - leftPadding - LABEL_WIDTH;
             const time = actualTimelinePosition / (TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom);
             setCurrentTime(Math.max(0, time));
           }}
@@ -964,7 +952,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
           `}</style>
           <div
             className="relative timeline-background"
-            style={{ width: `${scrollableWidth + 64}px`, minHeight: '100%' }}
+            style={{ width: `${scrollableWidth + LABEL_WIDTH}px`, minHeight: '100%' }}
           >
             {/* Time Ruler */}
             <div className="sticky top-0 z-20 h-6 bg-gray-100 border-b border-gray-200 flex">
