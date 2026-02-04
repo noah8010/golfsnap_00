@@ -19,6 +19,8 @@ interface NewProjectFlowScreenProps {
   onComplete: (aspectRatio: AspectRatio, selectedMedia: MediaItem[]) => void;
   onClose: () => void;
   isShareMode?: boolean;
+  /** 템플릿에서 지정한 초기 화면 비율 (비율 선택 화면에서 사전 선택됨) */
+  initialAspectRatio?: AspectRatio;
 }
 
 type Step = 1 | 2 | 3;
@@ -27,10 +29,13 @@ export const NewProjectFlowScreen: React.FC<NewProjectFlowScreenProps> = ({
   onComplete,
   onClose,
   isShareMode = false,
+  initialAspectRatio,
 }) => {
   // 공유 모드에서는 비율 선택 건너뛰기 (기본 9:16)
   const [currentStep, setCurrentStep] = useState<Step>(isShareMode ? 2 : 1);
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio | null>(isShareMode ? '9:16' : null);
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio | null>(
+    isShareMode ? '9:16' : initialAspectRatio || null
+  );
   const [selectedMedia, setSelectedMedia] = useState<MediaItem[]>([]);
   const [showShareDialog, setShowShareDialog] = useState(false);
 
@@ -100,7 +105,7 @@ export const NewProjectFlowScreen: React.FC<NewProjectFlowScreenProps> = ({
             exit={{ opacity: 0, x: -20 }}
             className="h-full"
           >
-            <NewProjectStep1Screen onNext={handleStep1Next} onClose={onClose} />
+            <NewProjectStep1Screen onNext={handleStep1Next} onClose={onClose} defaultRatio={initialAspectRatio} />
           </motion.div>
         )}
 

@@ -15,6 +15,7 @@
 
 import { create } from 'zustand';
 import { ShotData, VideoClip, Project, TimelineItem, MediaItem, AspectRatio } from '../types/golf';
+import { ProjectTemplate } from '../constants/templates';
 
 // ============================================================================
 // 스토어 인터페이스 정의
@@ -54,6 +55,16 @@ interface AppState {
 
   /** 공유 모드 설정 함수 */
   setShareMode: (isShareMode: boolean) => void;
+
+  // ========================================
+  // 템플릿 선택
+  // ========================================
+
+  /** 선택된 프로젝트 템플릿 (새 프로젝트 플로우에서 사용) */
+  selectedTemplate: ProjectTemplate | null;
+
+  /** 템플릿 선택/해제 함수 */
+  setSelectedTemplate: (template: ProjectTemplate | null) => void;
 
   // ========================================
   // 골프 샷 데이터
@@ -181,6 +192,10 @@ export const useAppStore = create<AppState>((set) => ({
   isShareMode: false,
   setShareMode: (isShareMode) => set({ isShareMode }),
 
+  // 초기 상태: 템플릿
+  selectedTemplate: null,
+  setSelectedTemplate: (template) => set({ selectedTemplate: template }),
+
   // ========================================
   // 초기 상태: 골프 샷 데이터
   // ========================================
@@ -298,10 +313,11 @@ export const useAppStore = create<AppState>((set) => ({
    */
   createNewProject: (aspectRatio, selectedMedia) => set((state) => {
     const projectId = `project-${Date.now()}`;
+    const now = Date.now();
 
-    // 선택된 미디어로 타임라인 클립 생성
+    // 선택된 미디어로 비디오 타임라인 클립 생성
     let currentPosition = 0;
-    const timeline: TimelineItem[] = selectedMedia.map((media, index) => {
+    const videoTimeline: TimelineItem[] = selectedMedia.map((media, index) => {
       const duration = media.duration || 5; // 이미지는 기본 5초
       const clip: TimelineItem = {
         id: `clip-${projectId}-${index}`,
@@ -318,16 +334,34 @@ export const useAppStore = create<AppState>((set) => ({
       return clip;
     });
 
-    // 총 길이 계산
+    // 총 비디오 길이 계산
     const totalDuration = selectedMedia.reduce((acc, m) => acc + (m.duration || 5), 0);
+
+    // 템플릿이 선택된 경우 비-비디오 트랙 클립 병합
+    let templateClips: TimelineItem[] = [];
+    const template = state.selectedTemplate;
+    if (template) {
+      templateClips = template.timeline
+        .filter((c) => c.track !== 'video')
+        .map((c) => ({
+          ...c,
+          id: `${c.id}-${now}`,
+          clipId: `${c.clipId}-${now}`,
+          // 비디오 범위를 초과하지 않도록 조정
+          position: Math.min(c.position, Math.max(0, totalDuration - c.duration)),
+          duration: Math.min(c.duration, totalDuration),
+        }));
+    }
 
     const newProject: Project = {
       id: projectId,
-      name: `새 프로젝트 ${state.projects.length + 1}`,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      name: template
+        ? `${template.name} - ${new Date().toLocaleDateString('ko-KR')}`
+        : `새 프로젝트 ${state.projects.length + 1}`,
+      createdAt: now,
+      updatedAt: now,
       clips: [],
-      timeline: timeline, // 선택된 미디어로 생성된 타임라인
+      timeline: [...videoTimeline, ...templateClips],
       duration: totalDuration,
       aspectRatio,
       thumbnail: selectedMedia[0]?.thumbnail,
@@ -336,7 +370,8 @@ export const useAppStore = create<AppState>((set) => ({
     return {
       projects: [...state.projects, newProject],
       currentProject: newProject,
-      currentScreen: 'editor', // 에디터로 자동 이동
+      currentScreen: 'editor',
+      selectedTemplate: null, // 사용 후 초기화
     };
   }),
 

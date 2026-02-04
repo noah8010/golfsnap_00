@@ -7,10 +7,12 @@ import { useTouchScroll } from '../hooks/useTouchScroll';
 interface NewProjectStep1ScreenProps {
   onNext: (aspectRatio: AspectRatio) => void;
   onClose: () => void;
+  /** 템플릿에서 지정한 기본 비율 (사전 선택) */
+  defaultRatio?: AspectRatio;
 }
 
-export const NewProjectStep1Screen: React.FC<NewProjectStep1ScreenProps> = ({ onNext, onClose }) => {
-  const [selectedRatio, setSelectedRatio] = useState<AspectRatio | null>(null);
+export const NewProjectStep1Screen: React.FC<NewProjectStep1ScreenProps> = ({ onNext, onClose, defaultRatio }) => {
+  const [selectedRatio, setSelectedRatio] = useState<AspectRatio | null>(defaultRatio || null);
   const scrollRef = useTouchScroll<HTMLDivElement>();
 
   const aspectRatios: Array<{

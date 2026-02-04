@@ -10,7 +10,7 @@ import { useTheme } from '../hooks/useTheme';
 import { ProjectTemplate } from '../constants/templates';
 
 export const CreateDashboardScreen: React.FC = () => {
-  const { projects, addProject, updateProject, deleteProject, duplicateProject, setCurrentScreen, setCurrentProject, setShareMode } = useAppStore();
+  const { projects, updateProject, deleteProject, duplicateProject, setCurrentScreen, setCurrentProject, setShareMode, setSelectedTemplate } = useAppStore();
   const [searchQuery] = useState('');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showBottomSheet, setShowBottomSheet] = useState(false);
@@ -93,28 +93,11 @@ export const CreateDashboardScreen: React.FC = () => {
     }
   };
 
-  /** 템플릿으로 새 프로젝트 생성 */
+  /** 템플릿 선택 → 새 프로젝트 플로우로 이동 (비율 사전 선택) */
   const handleTemplateSelect = (template: ProjectTemplate) => {
-    const now = Date.now();
-    // 템플릿의 타임라인 클립 ID를 고유하게 변환
-    const timeline = template.timeline.map((clip) => ({
-      ...clip,
-      id: `${clip.id}-${now}`,
-      clipId: `${clip.clipId}-${now}`,
-    }));
-    const newProject: Project = {
-      id: `project-${now}`,
-      name: `${template.name} - ${new Date().toLocaleDateString('ko-KR')}`,
-      createdAt: now,
-      updatedAt: now,
-      clips: [],
-      timeline,
-      duration: template.duration,
-      aspectRatio: template.aspectRatio,
-    };
-    addProject(newProject);
-    setCurrentProject(newProject);
-    setCurrentScreen('editor');
+    setSelectedTemplate(template);
+    setShareMode(false);
+    setCurrentScreen('newProject');
   };
 
   const handleProjectClick = (project: Project) => {

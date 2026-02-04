@@ -55,10 +55,11 @@ const App: React.FC = () => {
   // ========================================
 
   const {
-    currentScreen,     // 현재 화면
-    setCurrentScreen,  // 화면 전환 함수
-    createNewProject,  // 새 프로젝트 생성 함수
-    isShareMode,       // 공유 모드 여부
+    currentScreen,       // 현재 화면
+    setCurrentScreen,    // 화면 전환 함수
+    createNewProject,    // 새 프로젝트 생성 함수
+    isShareMode,         // 공유 모드 여부
+    selectedTemplate,    // 선택된 프로젝트 템플릿
   } = useAppStore();
 
   // 다크/라이트 모드
@@ -107,6 +108,7 @@ const App: React.FC = () => {
           onComplete={handleNewProjectComplete}
           onClose={handleNewProjectClose}
           isShareMode={isShareMode}
+          initialAspectRatio={selectedTemplate?.aspectRatio}
         />
       </MobileFrame>
     );
