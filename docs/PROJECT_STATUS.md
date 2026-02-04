@@ -42,7 +42,7 @@ React 18 + TypeScript 5 + Vite 5 + Zustand + Tailwind CSS + Framer Motion
 | 내보내기 플로우 | 설정 → 렌더링(취소 가능) → 완료 후 액션 선택 |
 | **실행 취소/다시 실행** | 히스토리 스택 (최대 30단계), Ctrl+Z/Ctrl+Y |
 | **자동 저장 UI** | 저장 상태 표시 (저장됨/저장 중/미저장) |
-| **텍스트 애니메이션** | 6가지 프리셋 (fade-in, slide-up 등) |
+| **텍스트 애니메이션** | 11가지 프리셋 (fade-in, slide-up, glow 등) |
 | **클립 스냅** | 드래그 시 다른 클립 경계에 자동 스냅 |
 | **AI 어시스턴트** | 메타데이터 기반 스티커/텍스트 자동 추천 |
 
@@ -78,9 +78,8 @@ npm run build   # 프로덕션 빌드
 | 문서 | 설명 |
 |------|------|
 | [../CLAUDE.md](../CLAUDE.md) | AI 세션 가이드 (필수) |
-| [CODING_RULES.md](./CODING_RULES.md) | 코딩 규칙 |
-| [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md) | 디자인 시스템 |
-| [FEATURE_GUIDE.md](./FEATURE_GUIDE.md) | 기능별 상세 가이드 |
+| [STYLE_GUIDE.md](./STYLE_GUIDE.md) | 코딩 규칙 + 디자인 시스템 |
+| [FEATURE_GUIDE.md](./FEATURE_GUIDE.md) | 기능 명세 및 API 레퍼런스 |
 | [TODO.md](./TODO.md) | 작업 목록 |
 
 ---

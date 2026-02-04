@@ -40,9 +40,8 @@ Lucide React (아이콘)
 
 | 문서 | 경로 | 용도 |
 |------|------|------|
-| **코딩 규칙** | `docs/CODING_RULES.md` | 코딩 컨벤션, 네이밍 규칙 |
-| **디자인 시스템** | `docs/DESIGN_SYSTEM.md` | 색상, 타이포그래피, 컴포넌트 |
-| **기능 가이드** | `docs/FEATURE_GUIDE.md` | 상세 기능 명세 |
+| **스타일 가이드** | `docs/STYLE_GUIDE.md` | 코딩 규칙 + 디자인 시스템 |
+| **기능 가이드** | `docs/FEATURE_GUIDE.md` | 기능 명세 및 API 레퍼런스 |
 | **프로젝트 현황** | `docs/PROJECT_STATUS.md` | 완성도, 남은 작업 |
 | **TODO** | `docs/TODO.md` | 우선순위별 작업 목록 |
 
@@ -63,8 +62,11 @@ src/
 ├── App.tsx                     # 라우팅 (수정 주의)
 ├── types/golf.ts               # 타입 정의 (수정 시 전파 영향 큼)
 ├── store/useAppStore.ts        # 전역 상태 (수정 시 주의)
+├── store/useHistoryStore.ts    # Undo/Redo 히스토리
 ├── constants/editor.ts         # 상수 값
+├── constants/assistantRules.ts # AI 어시스턴트 규칙
 ├── hooks/useTimeline.ts        # 타임라인 핵심 로직 (복잡)
+├── hooks/useSmartAssistant.ts  # AI 어시스턴트 훅
 └── screens/EditorWorkspaceScreen.tsx  # 에디터 메인 (가장 복잡)
 ```
 
@@ -104,8 +106,7 @@ git log --oneline -5
 ```
 
 ### Step 3: 작업 시작 전 확인
-- [ ] 기존 코드 스타일 확인 (`docs/CODING_RULES.md`)
-- [ ] 디자인 시스템 확인 (`docs/DESIGN_SYSTEM.md`)
+- [ ] 스타일 가이드 확인 (`docs/STYLE_GUIDE.md`)
 - [ ] 관련 컴포넌트 코드 먼저 읽기
 
 ---

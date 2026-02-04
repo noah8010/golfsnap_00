@@ -42,6 +42,7 @@ import { ShotsScreen } from './screens/ShotsScreen';
 import { EditorScreen } from './screens/EditorScreen';
 import { PreviewScreen } from './screens/PreviewScreen';
 import { useAppStore } from './store/useAppStore';
+import { useTheme } from './hooks/useTheme';
 
 /**
  * 앱 루트 컴포넌트
@@ -59,6 +60,9 @@ const App: React.FC = () => {
     createNewProject,  // 새 프로젝트 생성 함수
     isShareMode,       // 공유 모드 여부
   } = useAppStore();
+
+  // 다크/라이트 모드
+  useTheme();
 
   // ========================================
   // 새 프로젝트 플로우 핸들러

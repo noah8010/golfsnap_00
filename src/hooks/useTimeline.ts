@@ -33,7 +33,7 @@
  */
 
 import { useEffect, useState, useMemo } from 'react';
-import { TimelineItem } from '../types/golf';
+import { TimelineItem, TransitionType } from '../types/golf';
 import { TIMELINE_CONFIG } from '../constants/editor';
 
 /**
@@ -50,14 +50,104 @@ export const useTimeline = (initialClips: TimelineItem[] = []) => {
   /** 현재 타임라인의 모든 클립 */
   const [timelineClips, setTimelineClips] = useState<TimelineItem[]>(initialClips);
 
-  /** 현재 선택된 클립 ID (null이면 선택 없음) */
-  const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
+  /** 다중 선택된 클립 ID 목록 */
+  const [selectedClipIds, setSelectedClipIds] = useState<Set<string>>(new Set());
+
+  /** 다중 선택 모드 활성화 여부 */
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
 
   /** 타임라인 스크롤 오프셋 (초 단위) */
   const [scrollOffset, setScrollOffset] = useState(0);
 
-  /** 현재 선택된 클립 객체 (편의 접근용) */
-  const selectedClip = timelineClips.find((c) => c.id === selectedClipId);
+  /** 단일 선택 클립 ID (하위 호환용 파생값) */
+  const selectedClipId = selectedClipIds.size === 1
+    ? Array.from(selectedClipIds)[0]
+    : null;
+
+  /** 현재 선택된 클립 객체 (단일 선택 시) */
+  const selectedClip = selectedClipId
+    ? timelineClips.find((c) => c.id === selectedClipId)
+    : undefined;
+
+  /**
+   * 단일 클립 선택 (기존 호환)
+   * 다중 선택 모드가 아니면 단일 교체, 모드면 토글
+   */
+  const setSelectedClipId = (clipId: string | null) => {
+    if (clipId === null) {
+      setSelectedClipIds(new Set());
+      return;
+    }
+    if (isMultiSelectMode) {
+      setSelectedClipIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(clipId)) {
+          next.delete(clipId);
+        } else {
+          next.add(clipId);
+        }
+        return next;
+      });
+    } else {
+      setSelectedClipIds(new Set([clipId]));
+    }
+  };
+
+  /**
+   * 다중 선택 모드 토글
+   * 모드 해제 시 선택 초기화
+   */
+  const toggleMultiSelectMode = () => {
+    setIsMultiSelectMode((prev) => {
+      if (prev) {
+        // 모드 해제 시 선택 초기화
+        setSelectedClipIds(new Set());
+      }
+      return !prev;
+    });
+  };
+
+  /** 선택된 클립 모두 삭제 */
+  const deleteSelectedClips = () => {
+    if (selectedClipIds.size === 0) return;
+    // 역순으로 삭제하여 인덱스 충돌 방지
+    const idsToDelete = Array.from(selectedClipIds);
+    let updated = [...timelineClips];
+
+    idsToDelete.forEach((id) => {
+      const clipIndex = updated.findIndex((c) => c.id === id);
+      if (clipIndex === -1) return;
+      const clip = updated[clipIndex];
+
+      // 삭제 및 리플 편집 (비디오 트랙만)
+      updated = updated.filter((c) => c.id !== id);
+      if (clip.track === 'video') {
+        updated = updated.map((c) => {
+          if (c.track === clip.track && c.position > clip.position) {
+            return { ...c, position: c.position - clip.duration };
+          }
+          return c;
+        });
+      }
+    });
+
+    // 비디오 범위 재조정
+    const videoClips = updated.filter((c) => c.track === 'video');
+    const videoEnd = videoClips.length > 0
+      ? Math.max(...videoClips.map((c) => c.position + c.duration))
+      : 0;
+    updated = updated.map((c) => {
+      if (c.track !== 'video' && c.position + c.duration > videoEnd) {
+        const maxPosition = Math.max(0, videoEnd - c.duration);
+        return { ...c, position: Math.min(c.position, maxPosition) };
+      }
+      return c;
+    });
+
+    setTimelineClips(updated);
+    setSelectedClipIds(new Set());
+    setIsMultiSelectMode(false);
+  };
 
   // ========================================
   // 초기화 및 동기화
@@ -92,7 +182,7 @@ export const useTimeline = (initialClips: TimelineItem[] = []) => {
     });
 
     setTimelineClips(adjustedClips);
-    setSelectedClipId(null);
+    setSelectedClipIds(new Set());
   }, [initialClips]);
 
   // ========================================
@@ -812,6 +902,34 @@ export const useTimeline = (initialClips: TimelineItem[] = []) => {
   };
 
   // ========================================
+  // 전환 효과 설정
+  // ========================================
+
+  /**
+   * 클립의 전환 효과를 설정합니다.
+   *
+   * @param clipId - 대상 클립 ID
+   * @param direction - 전환 방향 ('out' = 이 클립의 아웃 전환)
+   * @param transition - 전환 타입
+   */
+  const setClipTransition = (
+    clipId: string,
+    direction: 'in' | 'out',
+    transition: TransitionType
+  ) => {
+    setTimelineClips(timelineClips.map((c) => {
+      if (c.id !== clipId) return c;
+      return {
+        ...c,
+        transitions: {
+          ...c.transitions,
+          [direction]: transition,
+        },
+      };
+    }));
+  };
+
+  // ========================================
   // 반환값
   // ========================================
 
@@ -822,11 +940,23 @@ export const useTimeline = (initialClips: TimelineItem[] = []) => {
     /** 타임라인 클립 직접 설정 (Undo/Redo용) */
     setTimelineClips,
 
-    /** 선택된 클립 ID */
+    /** 선택된 클립 ID (단일 선택 시, 하위 호환용) */
     selectedClipId,
 
-    /** 선택된 클립 객체 */
+    /** 선택된 클립 객체 (단일 선택 시) */
     selectedClip,
+
+    /** 다중 선택된 클립 ID Set */
+    selectedClipIds,
+
+    /** 다중 선택 모드 여부 */
+    isMultiSelectMode,
+
+    /** 다중 선택 모드 토글 */
+    toggleMultiSelectMode,
+
+    /** 선택된 클립 모두 삭제 */
+    deleteSelectedClips,
 
     /** 타임라인 스크롤 오프셋 */
     scrollOffset,
@@ -863,5 +993,8 @@ export const useTimeline = (initialClips: TimelineItem[] = []) => {
 
     /** 클립 이동 */
     moveClip,
+
+    /** 전환 효과 설정 */
+    setClipTransition,
   };
 };

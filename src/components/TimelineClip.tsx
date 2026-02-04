@@ -45,10 +45,12 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { CheckSquare, Square } from 'lucide-react';
 import { TimelineItem } from '../types/golf';
 import { TrimHandle } from './TrimHandle';
 import { useDragClip } from '../hooks/useDragClip';
 import { useLongPress } from '../hooks/useLongPress';
+import { AudioWaveform } from './AudioWaveform';
 import { TIMELINE_CONFIG } from '../constants/editor';
 
 // ============================================================================
@@ -64,6 +66,9 @@ interface TimelineClipProps {
 
   /** 현재 선택 여부 */
   isSelected: boolean;
+
+  /** 다중 선택 모드 여부 */
+  isMultiSelectMode?: boolean;
 
   /** 현재 줌 레벨 */
   zoom: number;
@@ -114,6 +119,7 @@ interface TimelineClipProps {
 export const TimelineClip: React.FC<TimelineClipProps> = ({
   clip,
   isSelected,
+  isMultiSelectMode = false,
   zoom,
   isDraggable,
   leftPadding = 0,
@@ -311,6 +317,17 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
       onTouchMove={!isDraggable ? longPressHandlers.onTouchMove : undefined}
       onTouchEnd={!isDraggable ? longPressHandlers.onTouchEnd : undefined}
     >
+      {/* 다중 선택 모드 체크박스 */}
+      {isMultiSelectMode && (
+        <div className="absolute top-0.5 right-0.5 z-10 pointer-events-none">
+          {isSelected ? (
+            <CheckSquare className="w-3.5 h-3.5 text-white drop-shadow" />
+          ) : (
+            <Square className="w-3.5 h-3.5 text-white/60 drop-shadow" />
+          )}
+        </div>
+      )}
+
       {/* ========================================
           비디오 트랙 렌더링
           ======================================== */}
@@ -355,8 +372,17 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
            텍스트/오디오/필터/스티커 트랙 렌더링
            ======================================== */
         <>
+          {/* 오디오 파형 (오디오 트랙 전용) */}
+          {clip.track === 'audio' && (
+            <AudioWaveform
+              clipId={clip.id}
+              width={Math.max(clip.duration * TIMELINE_CONFIG.PIXELS_PER_SECOND * zoom, 30)}
+              height={40}
+            />
+          )}
+
           {/* 클립 라벨 */}
-          <span className="text-xs text-white font-medium truncate pointer-events-none px-2 py-1 block">
+          <span className="text-xs text-white font-medium truncate pointer-events-none px-2 py-1 block relative z-10">
             {label}
           </span>
 

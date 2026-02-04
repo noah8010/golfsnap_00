@@ -4,9 +4,13 @@ import { UserCircle2, MoreVertical, Plus, Copy, Edit2, Trash2, Clock, ChevronLef
 import { useAppStore } from '../store/useAppStore';
 import { Project } from '../types/golf';
 import { useTouchScroll } from '../hooks/useTouchScroll';
+import { TemplateSelector } from '../components/TemplateSelector';
+import { ThemeToggle } from '../components/ThemeToggle';
+import { useTheme } from '../hooks/useTheme';
+import { ProjectTemplate } from '../constants/templates';
 
 export const CreateDashboardScreen: React.FC = () => {
-  const { projects, updateProject, deleteProject, duplicateProject, setCurrentScreen, setCurrentProject, setShareMode } = useAppStore();
+  const { projects, addProject, updateProject, deleteProject, duplicateProject, setCurrentScreen, setCurrentProject, setShareMode } = useAppStore();
   const [searchQuery] = useState('');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showBottomSheet, setShowBottomSheet] = useState(false);
@@ -14,6 +18,7 @@ export const CreateDashboardScreen: React.FC = () => {
   const [renameValue, setRenameValue] = useState('');
   const [showCameraAlert, setShowCameraAlert] = useState(false);
   const scrollRef = useTouchScroll<HTMLDivElement>();
+  const { isDark, toggleTheme } = useTheme();
 
   const filteredProjects = projects.filter((project) =>
     project.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -88,6 +93,30 @@ export const CreateDashboardScreen: React.FC = () => {
     }
   };
 
+  /** 템플릿으로 새 프로젝트 생성 */
+  const handleTemplateSelect = (template: ProjectTemplate) => {
+    const now = Date.now();
+    // 템플릿의 타임라인 클립 ID를 고유하게 변환
+    const timeline = template.timeline.map((clip) => ({
+      ...clip,
+      id: `${clip.id}-${now}`,
+      clipId: `${clip.clipId}-${now}`,
+    }));
+    const newProject: Project = {
+      id: `project-${now}`,
+      name: `${template.name} - ${new Date().toLocaleDateString('ko-KR')}`,
+      createdAt: now,
+      updatedAt: now,
+      clips: [],
+      timeline,
+      duration: template.duration,
+      aspectRatio: template.aspectRatio,
+    };
+    addProject(newProject);
+    setCurrentProject(newProject);
+    setCurrentScreen('editor');
+  };
+
   const handleProjectClick = (project: Project) => {
     setCurrentProject(project);
     setCurrentScreen('editor');
@@ -103,42 +132,45 @@ export const CreateDashboardScreen: React.FC = () => {
   };
 
   return (
-    <div className="relative flex flex-col h-full bg-gray-50">
+    <div className="relative flex flex-col h-full bg-gray-50 dark:bg-gray-900">
       {/* Status Bar Spacer - 모바일 상단 UI 영역 */}
-      <div className="flex-shrink-0 h-11 bg-white" />
+      <div className="flex-shrink-0 h-11 bg-white dark:bg-gray-800" />
 
       {/* Header */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4">
-        <div className="flex items-center gap-2 py-3">
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setCurrentScreen('home')}
-            className="w-10 h-10 flex items-center justify-center -ml-2"
-          >
-            <ChevronLeft className="w-6 h-6 text-gray-900" />
-          </motion.button>
-          <h1 className="text-lg font-bold text-gray-900">만들기</h1>
+      <div className="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4">
+        <div className="flex items-center justify-between py-3">
+          <div className="flex items-center gap-2">
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setCurrentScreen('home')}
+              className="w-10 h-10 flex items-center justify-center -ml-2"
+            >
+              <ChevronLeft className="w-6 h-6 text-gray-900 dark:text-gray-100" />
+            </motion.button>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">만들기</h1>
+          </div>
+          <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
         </div>
       </div>
 
       {/* Content */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide touch-scroll pb-28">
         {/* Profile Section */}
-        <div className="px-4 py-6 bg-white">
+        <div className="px-4 py-6 bg-white dark:bg-gray-800">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
               <UserCircle2 className="w-8 h-8 text-gray-400" />
             </div>
             <div>
-              <h3 className="font-bold text-gray-900">Noah.nam</h3>
-              <p className="text-sm text-gray-500">100클이 골퍼</p>
+              <h3 className="font-bold text-gray-900 dark:text-gray-100">Noah.nam</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">100클이 골퍼</p>
             </div>
           </div>
         </div>
 
         {/* Share Section */}
-        <div className="px-4 py-6 bg-white">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">공유하기</h2>
+        <div className="px-4 py-6 bg-white dark:bg-gray-800">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">공유하기</h2>
           <div className="space-y-3">
             {/* 촬영하기 버튼 */}
             <motion.button
@@ -173,18 +205,18 @@ export const CreateDashboardScreen: React.FC = () => {
         </div>
 
         {/* Quick Start */}
-        <div className="px-4 py-6 bg-gray-50">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">빠른 시작</h2>
+        <div className="px-4 py-6 bg-gray-50 dark:bg-gray-900">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">빠른 시작</h2>
           <div className="grid grid-cols-2 gap-3">
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={handleNewProject}
-              className="flex flex-col items-center justify-center gap-2 p-6 bg-white rounded-2xl border-2 border-dashed border-gray-300 hover:border-golf-green transition-colors"
+              className="flex flex-col items-center justify-center gap-2 p-6 bg-white dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-golf-green transition-colors"
             >
               <div className="w-12 h-12 rounded-full bg-golf-green/10 flex items-center justify-center">
                 <Plus className="w-6 h-6 text-golf-green" />
               </div>
-              <span className="text-sm font-semibold text-gray-900">새 프로젝트 시작</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">새 프로젝트 시작</span>
             </motion.button>
 
             <motion.button
@@ -201,9 +233,12 @@ export const CreateDashboardScreen: React.FC = () => {
           </div>
         </div>
 
+        {/* Template Section */}
+        <TemplateSelector onSelect={handleTemplateSelect} />
+
         {/* Projects List */}
-        <div className="px-4 py-6 bg-gray-50">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">내 프로젝트</h2>
+        <div className="px-4 py-6 bg-gray-50 dark:bg-gray-900">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">내 프로젝트</h2>
           {filteredProjects.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-400 text-sm">프로젝트가 없습니다</p>

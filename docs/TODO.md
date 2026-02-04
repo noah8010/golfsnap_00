@@ -1,7 +1,7 @@
 # TODO - 작업 목록
 
-> **최종 업데이트**: 2026-02-03
-> **관련 문서**: [../CLAUDE.md](../CLAUDE.md) | [CODING_RULES.md](./CODING_RULES.md) | [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md)
+> **최종 업데이트**: 2026-02-04
+> **관련 문서**: [../CLAUDE.md](../CLAUDE.md) | [STYLE_GUIDE.md](./STYLE_GUIDE.md) | [FEATURE_GUIDE.md](./FEATURE_GUIDE.md)
 
 ---
 
@@ -11,7 +11,7 @@
 |------|------|
 | 실행 취소/다시 실행 | 히스토리 스택 (최대 30단계), Ctrl+Z/Ctrl+Y 단축키 |
 | 자동 저장 UI | 저장 상태 시각적 표시 (저장됨/저장 중/미저장) |
-| 텍스트 애니메이션 | 6가지 프리셋 (fade-in, slide-up, slide-down, zoom-in, bounce, typewriter) |
+| 텍스트 애니메이션 | 11가지 프리셋 (none, fade-in, fade-out, slide-up, slide-down, slide-left, slide-right, zoom-in, bounce, typewriter, glow) |
 | 클립 스냅 | 드래그 시 다른 클립 경계에 자동 스냅 (0.3초 임계값), 햅틱 피드백 |
 | AI 어시스턴트 | 메타데이터 기반 스티커/텍스트 자동 추천, 다중 선택 지원 |
 
@@ -47,6 +47,8 @@
 
 ## 중간
 
+- [ ] **키보드 단축키 확장** - Delete키 클립 삭제, Space 재생/정지
+- [ ] **미리보기 재생 시뮬레이션** - 플레이헤드 자동 이동으로 재생 시연 효과
 - [ ] **타임라인 가상화** - 긴 타임라인 성능 최적화
 - [ ] **전환 효과** - 페이드, 디졸브, 와이프
 

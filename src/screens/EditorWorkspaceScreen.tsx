@@ -6,85 +6,30 @@
  * 모바일 환경에 최적화된 터치 기반 인터페이스를 제공합니다.
  *
  * ## 화면 구성
- * ```
- * ┌────────────────────────────────────┐
- * │  ← 프로젝트명          [내보내기]   │  상단 바
- * ├────────────────────────────────────┤
- * │                                    │
- * │         영상 미리보기               │  미리보기 영역 (45%)
- * │   (텍스트/스티커 오버레이 포함)      │
- * │                                    │
- * ├──────┬─────────────────────────────┤
- * │ 영상 │ [클립1] [클립2] [클립3]      │
- * │텍스트│    [텍스트]                  │  타임라인 (5개 트랙)
- * │오디오│        [BGM]                 │
- * │ 필터│ [필터]                       │
- * │스티커│   [스티커]                   │
- * │      │        │← 중앙 플레이헤드    │
- * ├──────┴─────────────────────────────┤
- * │ [다중선택] [분할] [속도] [복제] [삭제]│  하단 툴바
- * └────────────────────────────────────┘
- * ```
+ * - 상단 바: 프로젝트명, Undo/Redo, 저장 상태, 내보내기
+ * - 미리보기: PreviewPlayer 컴포넌트
+ * - 타임라인: TimelineTrack 컴포넌트 × 5
+ * - 하단 툴바: EditorToolbar 컴포넌트
  *
- * ## 주요 기능
- * 1. **타임라인 편집**
- *    - 5개 트랙: 영상, 텍스트, 오디오, 필터, 스티커
- *    - 중앙 고정 플레이헤드 (타임라인이 스크롤됨)
- *    - 클립 선택, 분할, 복제, 삭제
- *    - 클립 트리밍 (시작점/끝점 조정)
- *    - 클립 드래그 이동 (롱프레스 후)
- *
- * 2. **미리보기**
- *    - 화면 비율별 표시 (16:9, 9:16, 1:1)
- *    - 텍스트/스티커 실시간 오버레이
- *    - 재생/일시정지 컨트롤
- *
- * 3. **편집 패널**
- *    - SpeedPanel: 재생 속도 조절 (0.1x ~ 8x)
- *    - FilterPanel: 색상 필터 및 조정
- *    - AudioPanel: 오디오/BGM 설정
- *    - TextPanel: 텍스트 추가/편집
- *    - StickerPanel: 스티커 추가/편집
- *    - ExportPanel: 내보내기 시뮬레이션
- *
- * 4. **제스처**
- *    - 핀치 줌: 타임라인 확대/축소
- *    - 롱프레스: 클립 드래그 모드
- *    - 스와이프: 타임라인 스크롤
- *
- * ## 상태 관리
- * - useTimeline 훅: 타임라인 클립 조작
- * - usePinchZoom 훅: 핀치 줌 제스처
- * - 로컬 상태: UI 패널 표시, 재생 상태 등
- *
- * @see useTimeline - 타임라인 편집 로직
- * @see TimelineClip - 개별 클립 컴포넌트
+ * @see PreviewPlayer - 미리보기 플레이어
+ * @see TimelineTrack - 타임라인 트랙
+ * @see EditorToolbar - 하단 툴바
  */
 
 import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronLeft,   // 뒤로가기 아이콘
-  Play,          // 재생 아이콘
-  Pause,         // 일시정지 아이콘
-  Maximize2,     // 전체화면 아이콘
-  Scissors,      // 분할 아이콘
-  Trash2,        // 삭제 아이콘
-  Copy as CopyIcon,  // 복제 아이콘
-  Gauge,         // 속도 아이콘
-  CheckSquare,   // 다중선택 아이콘
-  Volume2,       // 볼륨 아이콘
-  Pencil,        // 수정 아이콘
-  Check,         // 저장됨 아이콘
-  Loader2,       // 저장 중 아이콘
-  Circle,        // 미저장 아이콘
-  Undo2,         // Undo 아이콘
-  Redo2,         // Redo 아이콘
-  Sparkles,      // AI 어시스턴트 아이콘
+  ChevronLeft,
+  Check,
+  Loader2,
+  Circle,
+  Undo2,
+  Redo2,
+  Sparkles,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { useHistoryStore } from '../store/useHistoryStore';
-import { TimelineItem } from '../types/golf';
+import { TimelineItem, TransitionType } from '../types/golf';
 import { SpeedPanel } from '../components/SpeedPanel';
 import { FilterPanel, FilterSettings } from '../components/FilterPanel';
 import { AudioPanel, AudioSettings } from '../components/AudioPanel';
@@ -93,10 +38,13 @@ import { StickerPanel, StickerSettings } from '../components/StickerPanel';
 import { ExportPanel } from '../components/ExportPanel';
 import { AssistantPanel } from '../components/AssistantPanel';
 import { ClipVolumePanel } from '../components/ClipVolumePanel';
-import { TimelineClip } from '../components/TimelineClip';
-import { DraggableOverlay } from '../components/DraggableOverlay';
+import { TransitionPanel } from '../components/TransitionPanel';
+import { PreviewPlayer } from '../components/PreviewPlayer';
+import { EditorToolbar } from '../components/EditorToolbar';
+import { TimelineTrack } from '../components/TimelineTrack';
 import { useTimeline } from '../hooks/useTimeline';
 import { usePinchZoom } from '../hooks/usePinchZoom';
+import { usePlaybackSimulation } from '../hooks/usePlaybackSimulation';
 import { TIMELINE_CONFIG, INITIAL_TIMELINE_CLIPS } from '../constants/editor';
 
 /** 좌측 트랙 레이블 너비 (px) */
@@ -104,8 +52,6 @@ const LABEL_WIDTH = 64;
 
 /**
  * 에디터 워크스페이스 화면 컴포넌트
- *
- * @returns React 컴포넌트
  */
 export const EditorWorkspaceScreen: React.FC = () => {
   const {
@@ -142,6 +88,10 @@ export const EditorWorkspaceScreen: React.FC = () => {
     setTimelineClips,
     selectedClipId,
     selectedClip,
+    selectedClipIds,
+    isMultiSelectMode,
+    toggleMultiSelectMode,
+    deleteSelectedClips,
     setSelectedClipId,
     setScrollOffset,
     splitClip,
@@ -153,13 +103,12 @@ export const EditorWorkspaceScreen: React.FC = () => {
     addClip,
     updateClip,
     moveClip,
+    setClipTransition,
   } = useTimeline(initialClips);
 
   // ============================================
   // UI 상태
   // ============================================
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
   const [projectTitle, setProjectTitle] = useState(currentProject?.name || '새 프로젝트');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [timelineZoom, setTimelineZoom] = useState(1);
@@ -180,6 +129,9 @@ export const EditorWorkspaceScreen: React.FC = () => {
   const [showStickerPanel, setShowStickerPanel] = useState(false);
   const [editingStickerClip, setEditingStickerClip] = useState<TimelineItem | null>(null);
   const [showAssistantPanel, setShowAssistantPanel] = useState(false);
+  const [showTransitionPanel, setShowTransitionPanel] = useState(false);
+  const [editingTransitionClipId, setEditingTransitionClipId] = useState<string | null>(null);
+  const [editingTransitionType, setEditingTransitionType] = useState<TransitionType>('none');
 
   // 스냅 가이드라인 상태
   const [snapGuide, setSnapGuide] = useState<{ visible: boolean; position: number }>({
@@ -189,7 +141,6 @@ export const EditorWorkspaceScreen: React.FC = () => {
 
   /**
    * 스냅 상태 변경 핸들러
-   * 클립 드래그 시 스냅되면 가이드라인 표시
    */
   const handleSnapChange = useCallback((snapped: boolean, snapPoint?: number) => {
     if (snapped && snapPoint !== undefined) {
@@ -199,27 +150,19 @@ export const EditorWorkspaceScreen: React.FC = () => {
     }
   }, []);
 
-  // 자동 저장 타이머 ref
+  // ============================================
+  // 자동 저장
+  // ============================================
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /**
-   * 자동 저장 트리거 함수
-   * 편집 발생 시 호출하여 저장 상태를 관리합니다.
-   */
+  /** 자동 저장 트리거 */
   const triggerAutoSave = useCallback(() => {
-    // 이전 타이머 취소
     if (autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current);
     }
-
-    // unsaved 상태로 변경
     setSaveStatus('unsaved');
-
-    // 2초 후 저장 시뮬레이션
     autoSaveTimerRef.current = setTimeout(() => {
       setSaveStatus('saving');
-
-      // 0.5초 후 저장 완료
       setTimeout(() => {
         setSaveStatus('saved');
         setLastSavedAt(Date.now());
@@ -227,14 +170,12 @@ export const EditorWorkspaceScreen: React.FC = () => {
     }, 2000);
   }, [setSaveStatus, setLastSavedAt]);
 
-  // 타임라인 변경 감지하여 자동 저장 트리거
   useEffect(() => {
     if (timelineClips.length > 0) {
       triggerAutoSave();
     }
   }, [timelineClips]);
 
-  // 컴포넌트 언마운트 시 타이머 정리
   useEffect(() => {
     return () => {
       if (autoSaveTimerRef.current) {
@@ -243,7 +184,9 @@ export const EditorWorkspaceScreen: React.FC = () => {
     };
   }, []);
 
-  // 히스토리 초기화 (컴포넌트 마운트 시)
+  // ============================================
+  // 히스토리 (Undo/Redo)
+  // ============================================
   const isHistoryInitialized = useRef(false);
   useEffect(() => {
     if (!isHistoryInitialized.current && timelineClips.length > 0) {
@@ -252,15 +195,10 @@ export const EditorWorkspaceScreen: React.FC = () => {
     }
   }, [timelineClips, initializeHistory]);
 
-  // 히스토리 저장용 이전 상태 ref
   const prevTimelineClipsRef = useRef<TimelineItem[]>(timelineClips);
 
-  // 타임라인 변경 시 히스토리에 저장
   useEffect(() => {
-    // 초기화 완료 후에만 히스토리 저장
     if (!isHistoryInitialized.current) return;
-
-    // 이전 상태와 비교하여 실제 변경이 있을 때만 저장
     const prevClips = prevTimelineClipsRef.current;
     if (JSON.stringify(prevClips) !== JSON.stringify(timelineClips)) {
       pushHistoryState(timelineClips);
@@ -268,33 +206,27 @@ export const EditorWorkspaceScreen: React.FC = () => {
     }
   }, [timelineClips, pushHistoryState]);
 
-  /**
-   * Undo 핸들러
-   * 이전 상태로 되돌립니다.
-   */
+  /** Undo 핸들러 */
   const handleUndo = useCallback(() => {
     const previousState = historyUndo();
     if (previousState) {
-      prevTimelineClipsRef.current = previousState; // 히스토리 저장 방지
+      prevTimelineClipsRef.current = previousState;
       setTimelineClips(previousState);
       setSelectedClipId(null);
     }
   }, [historyUndo, setTimelineClips, setSelectedClipId]);
 
-  /**
-   * Redo 핸들러
-   * 다음 상태로 다시 실행합니다.
-   */
+  /** Redo 핸들러 */
   const handleRedo = useCallback(() => {
     const nextState = historyRedo();
     if (nextState) {
-      prevTimelineClipsRef.current = nextState; // 히스토리 저장 방지
+      prevTimelineClipsRef.current = nextState;
       setTimelineClips(nextState);
       setSelectedClipId(null);
     }
   }, [historyRedo, setTimelineClips, setSelectedClipId]);
 
-  // 키보드 단축키 지원 (Ctrl+Z, Ctrl+Y)
+  // 키보드 단축키 (Ctrl+Z, Ctrl+Y)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) {
@@ -307,13 +239,12 @@ export const EditorWorkspaceScreen: React.FC = () => {
         }
       }
     };
-
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleUndo, handleRedo]);
 
   // ============================================
-  // 모바일 제스처 (핀치 줌)
+  // 핀치 줌
   // ============================================
   usePinchZoom({
     ref: timelineRef,
@@ -331,50 +262,56 @@ export const EditorWorkspaceScreen: React.FC = () => {
     );
   }
 
-  // 전체 타임라인 길이를 클립들의 끝 지점 중 가장 긴 것으로 계산
+  // ============================================
+  // 타임라인 계산
+  // ============================================
   const totalDuration = useMemo(() => {
     if (timelineClips.length === 0) return 60;
-    
     const maxEndTime = Math.max(
       ...timelineClips.map((clip) => clip.position + clip.duration)
     );
-    
-    return Math.max(maxEndTime, 10); // 최소 10초
+    return Math.max(maxEndTime, 10);
   }, [timelineClips]);
 
-  // 타임라인 컨테이너 너비 (모바일 기준 고정값 사용)
-  const MOBILE_TIMELINE_WIDTH = 393 - LABEL_WIDTH; // 모바일 너비 - 좌측 레이블
-  
-  // 스크롤 가능한 타임라인 너비 계산
+  const MOBILE_TIMELINE_WIDTH = 393 - LABEL_WIDTH;
+
   const { scrollableWidth, leftPadding } = useMemo(() => {
-    // 중앙 플레이헤드가 0초부터 마지막까지 모두 도달하려면
-    // 좌우 양쪽에 화면 너비의 절반만큼 여백 필요
     const containerWidth = MOBILE_TIMELINE_WIDTH;
     const paddingSeconds = (containerWidth / 2) / (TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom);
-    const duration = paddingSeconds + totalDuration + paddingSeconds; // 좌측 + 실제 + 우측
+    const duration = paddingSeconds + totalDuration + paddingSeconds;
     const width = duration * TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom;
     const padding = paddingSeconds * TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom;
-
-    return {
-      scrollableWidth: width,
-      leftPadding: padding
-    };
+    return { scrollableWidth: width, leftPadding: padding };
   }, [totalDuration, timelineZoom]);
 
   // ============================================
-  // 오버랩 감지 (같은 트랙 내 클립 겹침 확인)
+  // 재생 시뮬레이션
   // ============================================
+  const {
+    isPlaying,
+    currentTime,
+    togglePlayPause,
+    setCurrentTime: playbackSetCurrentTime,
+    isUserScrolling,
+  } = usePlaybackSimulation({
+    timelineRef,
+    totalDuration,
+    zoom: timelineZoom,
+    leftPadding,
+    labelWidth: LABEL_WIDTH,
+    pixelsPerSecond: TIMELINE_CONFIG.PIXELS_PER_SECOND,
+    onScrollOffsetChange: setScrollOffset,
+  });
+
+  // 오버랩 감지
   const overlappingClipIds = useMemo(() => {
     const overlapping = new Set<string>();
-
-    // 트랙별로 그룹화
     const trackGroups = timelineClips.reduce((acc, clip) => {
       if (!acc[clip.track]) acc[clip.track] = [];
       acc[clip.track].push(clip);
       return acc;
     }, {} as Record<string, TimelineItem[]>);
 
-    // 각 트랙에서 오버랩 확인
     Object.values(trackGroups).forEach((clips) => {
       for (let i = 0; i < clips.length; i++) {
         for (let j = i + 1; j < clips.length; j++) {
@@ -382,8 +319,6 @@ export const EditorWorkspaceScreen: React.FC = () => {
           const b = clips[j];
           const aEnd = a.position + a.duration;
           const bEnd = b.position + b.duration;
-
-          // 두 클립이 겹치는지 확인
           if (a.position < bEnd && aEnd > b.position) {
             overlapping.add(a.id);
             overlapping.add(b.id);
@@ -391,33 +326,29 @@ export const EditorWorkspaceScreen: React.FC = () => {
         }
       }
     });
-
     return overlapping;
   }, [timelineClips]);
 
-  // ============================================
-  // 프로젝트 저장 함수
-  // ============================================
+  // 트랙별 클립 필터링
+  const videoClips = useMemo(() => timelineClips.filter((c) => c.track === 'video'), [timelineClips]);
+  const textClips = useMemo(() => timelineClips.filter((c) => c.track === 'text'), [timelineClips]);
+  const audioClips = useMemo(() => timelineClips.filter((c) => c.track === 'audio'), [timelineClips]);
+  const filterClips = useMemo(() => timelineClips.filter((c) => c.track === 'filter'), [timelineClips]);
+  const stickerClips = useMemo(() => timelineClips.filter((c) => c.track === 'sticker'), [timelineClips]);
 
-  /**
-   * 현재 편집 내용을 프로젝트에 저장
-   * 프로토타입이므로 로컬 상태(Zustand)에만 저장
-   */
+  // ============================================
+  // 프로젝트 저장
+  // ============================================
   const saveProject = useCallback(() => {
     if (!currentProject) return;
-
-    // 타임라인 클립 및 프로젝트명 저장
     const totalDur = timelineClips.length > 0
       ? Math.max(...timelineClips.map((clip) => clip.position + clip.duration))
       : 0;
-
     updateProject(currentProject.id, {
       name: projectTitle,
       timeline: timelineClips,
       duration: totalDur,
     });
-
-    // currentProject도 동기화
     setCurrentProject({
       ...currentProject,
       name: projectTitle,
@@ -425,16 +356,11 @@ export const EditorWorkspaceScreen: React.FC = () => {
       duration: totalDur,
       updatedAt: Date.now(),
     });
-
-    console.log('[Editor] 프로젝트 저장됨:', projectTitle);
   }, [currentProject, projectTitle, timelineClips, updateProject, setCurrentProject]);
 
-  /**
-   * 프로젝트명 편집 완료 핸들러
-   */
+  /** 프로젝트명 편집 완료 */
   const handleTitleEditComplete = useCallback(() => {
     setIsEditingTitle(false);
-    // 프로젝트명 변경 시 바로 저장
     if (currentProject && projectTitle !== currentProject.name) {
       updateProject(currentProject.id, { name: projectTitle });
       setCurrentProject({
@@ -442,18 +368,14 @@ export const EditorWorkspaceScreen: React.FC = () => {
         name: projectTitle,
         updatedAt: Date.now(),
       });
-      console.log('[Editor] 프로젝트명 변경됨:', projectTitle);
     }
   }, [currentProject, projectTitle, updateProject, setCurrentProject]);
 
   // ============================================
-  // 기본 핸들러
+  // 핸들러
   // ============================================
-  const handlePlayPause = () => setIsPlaying(!isPlaying);
+  const handlePlayPause = togglePlayPause;
 
-  /**
-   * 뒤로가기 핸들러 - 편집 내용 저장 후 대시보드로 이동
-   */
   const handleBack = useCallback(() => {
     saveProject();
     setCurrentScreen('create');
@@ -461,21 +383,14 @@ export const EditorWorkspaceScreen: React.FC = () => {
 
   const handleExport = () => setShowExportPanel(true);
 
-  // ============================================
-  // 오버레이 위치 변경 핸들러
-  // ============================================
+  /** 오버레이 위치 변경 */
   const handleOverlayPositionChange = useCallback((clipId: string, x: number, y: number) => {
     const clip = timelineClips.find((c) => c.id === clipId);
     if (!clip) return;
-
     if (clip.track === 'text') {
-      updateClip(clipId, {
-        textPosition: { x, y },
-      });
+      updateClip(clipId, { textPosition: { x, y } });
     } else if (clip.track === 'sticker') {
-      updateClip(clipId, {
-        stickerPosition: { x, y },
-      });
+      updateClip(clipId, { stickerPosition: { x, y } });
     }
   }, [timelineClips, updateClip]);
 
@@ -484,60 +399,39 @@ export const EditorWorkspaceScreen: React.FC = () => {
   // ============================================
   const handleSplitClip = () => {
     if (!selectedClipId) return;
-    
     const clip = timelineClips.find((c) => c.id === selectedClipId);
     if (!clip) return;
-
-    // 텍스트/스티커 트랙은 분할 불가
     if (clip.track === 'text' || clip.track === 'sticker') {
       alert('텍스트/스티커 클립은 분할할 수 없습니다');
       return;
     }
-    
-      // 타임라인 컨테이너의 중앙 위치 계산
-      if (!timelineRef.current) return;
-      const containerWidth = timelineRef.current.clientWidth;
-      const centerOffset = containerWidth / 2;
-      const labelWidth = LABEL_WIDTH;
-
-      // scrollLeft를 직접 읽어서 최신 값 사용
-      let currentScrollLeft = timelineRef.current.scrollLeft;
-
-      // scrollLeft가 0이면 아직 초기화 안된 것 → leftPadding + labelWidth 사용
-      if (currentScrollLeft === 0 && leftPadding > 0) {
-        currentScrollLeft = leftPadding + labelWidth;
-        timelineRef.current.scrollLeft = currentScrollLeft;
-        setScrollOffset(currentScrollLeft);
-      }
-
-      const playheadPixelPosition = currentScrollLeft + centerOffset;
-
-      // 좌측 레이블과 여백을 고려하여 실제 타임라인 시간으로 변환
-      const actualTimelinePosition = playheadPixelPosition - leftPadding - labelWidth;
-      const playheadTime = actualTimelinePosition / (TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom);
-    
-    // 플레이헤드가 클립 범위 내에 있는지 확인
+    if (!timelineRef.current) return;
+    const containerWidth = timelineRef.current.clientWidth;
+    const centerOffset = containerWidth / 2;
+    let currentScrollLeft = timelineRef.current.scrollLeft;
+    if (currentScrollLeft === 0 && leftPadding > 0) {
+      currentScrollLeft = leftPadding + LABEL_WIDTH;
+      timelineRef.current.scrollLeft = currentScrollLeft;
+      setScrollOffset(currentScrollLeft);
+    }
+    const playheadPixelPosition = currentScrollLeft + centerOffset;
+    const actualTimelinePosition = playheadPixelPosition - leftPadding - LABEL_WIDTH;
+    const playheadTime = actualTimelinePosition / (TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom);
     const clipStart = clip.position;
     const clipEnd = clip.position + clip.duration;
-    
     if (playheadTime < clipStart || playheadTime > clipEnd) {
       alert('중앙 플레이헤드가 클립 위에 있지 않습니다');
       return;
     }
-
     const splitPoint = playheadTime - clip.position;
-    
     const success = splitClip(selectedClipId, splitPoint);
-
     if (!success) {
       alert('분할할 수 없습니다. 최소 길이를 확인하세요.');
     }
   };
 
   const handleDuplicateClip = () => {
-    if (selectedClipId) {
-      duplicateClip(selectedClipId);
-    }
+    if (selectedClipId) duplicateClip(selectedClipId);
   };
 
   const handleDeleteClip = () => {
@@ -548,37 +442,39 @@ export const EditorWorkspaceScreen: React.FC = () => {
   };
 
   const handleApplySpeed = (speed: number) => {
-    if (selectedClipId) {
-      updateClipSpeed(selectedClipId, speed);
-    }
+    if (selectedClipId) updateClipSpeed(selectedClipId, speed);
   };
 
-  /**
-   * 클립 볼륨 적용 핸들러
-   * 비디오 클립의 원본 오디오 볼륨을 조절합니다.
-   */
   const handleApplyVolume = (volume: number, muted: boolean) => {
     if (selectedClipId) {
-      updateClip(selectedClipId, {
-        volume: muted ? 0 : volume,
-        audioMuted: muted,
-      });
+      updateClip(selectedClipId, { volume: muted ? 0 : volume, audioMuted: muted });
       setShowVolumePanel(false);
     }
   };
 
   const handleMultiSelect = () => {
-    // TODO: 다중선택 기능 구현 (docs/TIMELINE_IMPROVEMENTS.md 참고)
-    alert('다중선택 기능은 추후 구현 예정입니다');
+    toggleMultiSelectMode();
   };
 
-  /**
-   * 선택된 클립 수정 핸들러
-   * 트랙 타입에 따라 해당 편집 패널을 열고 편집 모드로 전환
-   */
+  /** 전환 아이콘 클릭 핸들러 */
+  const handleTransitionClick = useCallback((clipId: string, currentTransition: TransitionType) => {
+    setEditingTransitionClipId(clipId);
+    setEditingTransitionType(currentTransition);
+    setShowTransitionPanel(true);
+  }, []);
+
+  /** 전환 효과 적용 핸들러 */
+  const handleApplyTransition = useCallback((transition: TransitionType) => {
+    if (editingTransitionClipId) {
+      setClipTransition(editingTransitionClipId, 'out', transition);
+    }
+    setShowTransitionPanel(false);
+    setEditingTransitionClipId(null);
+  }, [editingTransitionClipId, setClipTransition]);
+
+  /** 선택된 클립 수정 핸들러 */
   const handleEditClip = useCallback(() => {
     if (!selectedClip) return;
-
     switch (selectedClip.track) {
       case 'text':
         setEditingTextClip(selectedClip);
@@ -602,11 +498,38 @@ export const EditorWorkspaceScreen: React.FC = () => {
   }, [selectedClip]);
 
   // ============================================
+  // 플레이헤드 시간 계산
+  // ============================================
+  const getPlayheadTime = useCallback(() => {
+    if (!timelineRef.current) return 0;
+    const containerWidth = timelineRef.current.clientWidth;
+    const centerOffset = containerWidth / 2;
+    let currentScrollLeft = timelineRef.current.scrollLeft;
+    if (currentScrollLeft === 0 && leftPadding > 0) {
+      currentScrollLeft = leftPadding + LABEL_WIDTH;
+      timelineRef.current.scrollLeft = currentScrollLeft;
+      setScrollOffset(currentScrollLeft);
+    }
+    const playheadPixelPosition = currentScrollLeft + centerOffset;
+    const actualTimelinePosition = playheadPixelPosition - leftPadding - LABEL_WIDTH;
+    const playheadTime = actualTimelinePosition / (TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom);
+    return Math.max(0, playheadTime);
+  }, [leftPadding, timelineZoom, setScrollOffset]);
+
+  // 초기 스크롤 위치 설정
+  React.useLayoutEffect(() => {
+    if (timelineRef.current && leftPadding > 0) {
+      const initialScroll = leftPadding + LABEL_WIDTH;
+      timelineRef.current.scrollLeft = initialScroll;
+      setScrollOffset(initialScroll);
+    }
+  }, [leftPadding, timelineZoom]);
+
+  // ============================================
   // 패널 핸들러
   // ============================================
   const handleApplyFilter = (filters: FilterSettings) => {
     if (editingFilterClip) {
-      // 수정 모드
       updateClip(editingFilterClip.id, {
         filterBrightness: filters.brightness,
         filterContrast: filters.contrast,
@@ -617,35 +540,23 @@ export const EditorWorkspaceScreen: React.FC = () => {
       setShowFilterPanel(false);
       setEditingFilterClip(null);
     } else {
-      // 새로 추가
-      // 현재 플레이헤드 위치 계산
       const playheadTime = getPlayheadTime();
-
-      // 비디오 범위 계산
-      const videoClips = timelineClips.filter((c) => c.track === 'video');
-      
-      if (videoClips.length === 0) {
+      const vClips = timelineClips.filter((c) => c.track === 'video');
+      if (vClips.length === 0) {
         alert('먼저 비디오 클립을 추가해주세요');
         setShowFilterPanel(false);
         setEditingFilterClip(null);
         return;
       }
-      
-      const videoEnd = Math.max(...videoClips.map((c) => c.position + c.duration));
+      const videoEnd = Math.max(...vClips.map((c) => c.position + c.duration));
       const duration = 5;
-      
-      // 길이가 비디오보다 길면 비디오 길이로 제한
       const finalDuration = Math.min(duration, videoEnd);
-      
-      // 위치를 비디오 범위 내로 제한 (중앙 플레이헤드 기준)
       const clampedPosition = Math.max(0, Math.min(playheadTime, videoEnd - finalDuration));
-
-      // 새 필터 클립 생성 (중앙 플레이헤드 위치, 비디오 범위 내)
       const newFilterClip: TimelineItem = {
         id: `filter-${Date.now()}`,
         clipId: `filter-clip-${Date.now()}`,
-        position: clampedPosition, // 중앙 플레이헤드 위치
-        duration: finalDuration, // 비디오 길이 내로 제한
+        position: clampedPosition,
+        duration: finalDuration,
         track: 'filter',
         startTime: 0,
         endTime: finalDuration,
@@ -655,7 +566,6 @@ export const EditorWorkspaceScreen: React.FC = () => {
         filterTemperature: filters.temperature,
         filterPreset: filters.preset,
       };
-
       addClip(newFilterClip);
       setShowFilterPanel(false);
     }
@@ -663,7 +573,6 @@ export const EditorWorkspaceScreen: React.FC = () => {
 
   const handleApplyAudio = (audio: AudioSettings) => {
     if (editingAudioClip) {
-      // 수정 모드
       updateClip(editingAudioClip.id, {
         audioVolume: audio.volume,
         audioMuted: audio.muted,
@@ -672,34 +581,22 @@ export const EditorWorkspaceScreen: React.FC = () => {
       setShowAudioPanel(false);
       setEditingAudioClip(null);
     } else {
-      // 새로 추가
-      // 현재 플레이헤드 위치 계산
       const playheadTime = getPlayheadTime();
-
-      // 비디오 범위 계산
-      const videoClips = timelineClips.filter((c) => c.track === 'video');
-      
-      if (videoClips.length === 0) {
+      const vClips = timelineClips.filter((c) => c.track === 'video');
+      if (vClips.length === 0) {
         alert('먼저 비디오 클립을 추가해주세요');
         setShowAudioPanel(false);
         return;
       }
-      
-      const videoEnd = Math.max(...videoClips.map((c) => c.position + c.duration));
+      const videoEnd = Math.max(...vClips.map((c) => c.position + c.duration));
       const duration = audio.bgm ? 30 : 5;
-      
-      // 길이가 비디오보다 길면 비디오 길이로 제한
       const finalDuration = Math.min(duration, videoEnd);
-      
-      // 위치를 비디오 범위 내로 제한 (중앙 플레이헤드 기준)
       const clampedPosition = Math.max(0, Math.min(playheadTime, videoEnd - finalDuration));
-
-      // 새 오디오 클립 생성 (중앙 플레이헤드 위치, 비디오 범위 내)
       const newAudioClip: TimelineItem = {
         id: `audio-${Date.now()}`,
         clipId: `audio-clip-${Date.now()}`,
-        position: clampedPosition, // 중앙 플레이헤드 위치
-        duration: finalDuration, // 비디오 길이 내로 제한
+        position: clampedPosition,
+        duration: finalDuration,
         track: 'audio',
         startTime: 0,
         endTime: finalDuration,
@@ -707,7 +604,6 @@ export const EditorWorkspaceScreen: React.FC = () => {
         audioMuted: audio.muted,
         audioBgm: audio.bgm,
       };
-
       addClip(newAudioClip);
       setShowAudioPanel(false);
     }
@@ -715,7 +611,6 @@ export const EditorWorkspaceScreen: React.FC = () => {
 
   const handleAddText = (text: TextSettings) => {
     if (editingTextClip) {
-      // 수정 모드
       updateClip(editingTextClip.id, {
         textContent: text.content,
         textFont: text.font,
@@ -730,34 +625,22 @@ export const EditorWorkspaceScreen: React.FC = () => {
       });
       setEditingTextClip(null);
     } else {
-      // 새로 추가
-      // 현재 플레이헤드 위치 계산
       const playheadTime = getPlayheadTime();
-
-      // 비디오 범위 계산
-      const videoClips = timelineClips.filter((c) => c.track === 'video');
-      
-      if (videoClips.length === 0) {
+      const vClips = timelineClips.filter((c) => c.track === 'video');
+      if (vClips.length === 0) {
         alert('먼저 비디오 클립을 추가해주세요');
         setShowTextPanel(false);
         return;
       }
-
-      const videoEnd = Math.max(...videoClips.map((c) => c.position + c.duration));
+      const videoEnd = Math.max(...vClips.map((c) => c.position + c.duration));
       const duration = text.duration || 5;
-
-      // 길이가 비디오보다 길면 비디오 길이로 제한
       const finalDuration = Math.min(duration, videoEnd);
-
-      // 위치를 비디오 범위 내로 제한 (중앙 플레이헤드 기준)
       const clampedPosition = Math.max(0, Math.min(playheadTime, videoEnd - finalDuration));
-
-      // 새 텍스트 클립 생성 (중앙 플레이헤드 위치, 비디오 범위 내)
       const newTextClip: TimelineItem = {
         id: `text-${Date.now()}`,
         clipId: `text-clip-${Date.now()}`,
-        position: clampedPosition, // 중앙 플레이헤드 위치
-        duration: finalDuration, // 비디오 길이 내로 제한
+        position: clampedPosition,
+        duration: finalDuration,
         track: 'text',
         startTime: 0,
         endTime: finalDuration,
@@ -772,17 +655,13 @@ export const EditorWorkspaceScreen: React.FC = () => {
         textAnimation: text.animation,
         textPosition: text.position,
       };
-
-      // 타임라인에 추가
       addClip(newTextClip);
     }
-    
     setShowTextPanel(false);
   };
 
   const handleAddSticker = (sticker: StickerSettings) => {
     if (editingStickerClip) {
-      // 수정 모드
       updateClip(editingStickerClip.id, {
         stickerId: sticker.stickerId,
         stickerName: sticker.name,
@@ -794,28 +673,17 @@ export const EditorWorkspaceScreen: React.FC = () => {
       });
       setEditingStickerClip(null);
     } else {
-      // 새로 추가
       const playheadTime = getPlayheadTime();
-
-      // 비디오 범위 계산
-      const videoClips = timelineClips.filter((c) => c.track === 'video');
-
-      if (videoClips.length === 0) {
+      const vClips = timelineClips.filter((c) => c.track === 'video');
+      if (vClips.length === 0) {
         alert('먼저 비디오 클립을 추가해주세요');
         setShowStickerPanel(false);
         return;
       }
-
-      const videoEnd = Math.max(...videoClips.map((c) => c.position + c.duration));
+      const videoEnd = Math.max(...vClips.map((c) => c.position + c.duration));
       const duration = sticker.duration || 3;
-
-      // 길이가 비디오보다 길면 비디오 길이로 제한
       const finalDuration = Math.min(duration, videoEnd);
-
-      // 위치를 비디오 범위 내로 제한
       const clampedPosition = Math.max(0, Math.min(playheadTime, videoEnd - finalDuration));
-
-      // 새 스티커 클립 생성
       const newStickerClip: TimelineItem = {
         id: `sticker-${Date.now()}`,
         clipId: `sticker-clip-${Date.now()}`,
@@ -831,71 +699,27 @@ export const EditorWorkspaceScreen: React.FC = () => {
         stickerScale: sticker.scale,
         stickerPosition: sticker.position,
       };
-
       addClip(newStickerClip);
     }
-
     setShowStickerPanel(false);
   };
 
-  /**
-   * AI 어시스턴트에서 선택한 아이템 추가 핸들러
-   */
+  /** AI 어시스턴트 아이템 추가 */
   const handleAddAssistantItems = (items: TimelineItem[]) => {
-    items.forEach((item) => {
-      addClip(item);
-    });
+    items.forEach((item) => addClip(item));
     setShowAssistantPanel(false);
   };
 
-  // 플레이헤드 시간 계산 함수 (공통)
-  // 좌측 레이블(64px)이 타임라인 내부에 있으므로 고려 필요
-  const getPlayheadTime = React.useCallback(() => {
-    if (!timelineRef.current) return 0;
-
-    const containerWidth = timelineRef.current.clientWidth;
-    const centerOffset = containerWidth / 2;
-    // scrollLeft를 직접 읽어서 최신 값 사용
-    let currentScrollLeft = timelineRef.current.scrollLeft;
-
-    // scrollLeft가 0이면 아직 초기화 안된 것 → leftPadding + LABEL_WIDTH 사용
-    if (currentScrollLeft === 0 && leftPadding > 0) {
-      currentScrollLeft = leftPadding + LABEL_WIDTH;
-      timelineRef.current.scrollLeft = currentScrollLeft;
-      setScrollOffset(currentScrollLeft);
-    }
-
-    const playheadPixelPosition = currentScrollLeft + centerOffset;
-    const actualTimelinePosition = playheadPixelPosition - leftPadding - LABEL_WIDTH;
-    const playheadTime = actualTimelinePosition / (TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom);
-
-    return Math.max(0, playheadTime);
-  }, [leftPadding, timelineZoom]);
-
-  // 초기 스크롤 위치 설정 (0초가 중앙에 오도록)
-  React.useLayoutEffect(() => {
-    if (timelineRef.current && leftPadding > 0) {
-      // 좌측 레이블 + 좌측 여백으로 스크롤하여 0초를 중앙에 배치
-      const initialScroll = leftPadding + LABEL_WIDTH;
-      timelineRef.current.scrollLeft = initialScroll;
-      setScrollOffset(initialScroll);
-    }
-  }, [leftPadding, timelineZoom]); // zoom 변경 시에도 재조정
-
-  // 유틸리티 함수
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
+  // ============================================
+  // 렌더링
+  // ============================================
   return (
-    <div className="relative flex flex-col h-full bg-gray-50">
-      {/* Status Bar Spacer - 모바일 상단 UI 영역 */}
-      <div className="flex-shrink-0 h-11 bg-white" />
+    <div className="relative flex flex-col h-full bg-gray-50 dark:bg-gray-900">
+      {/* Status Bar Spacer */}
+      <div className="flex-shrink-0 h-11 bg-white dark:bg-gray-800" />
 
       {/* Top Bar */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4">
+      <div className="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4">
         <div className="flex items-center justify-between py-3">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <motion.button
@@ -903,7 +727,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
               onClick={handleBack}
               className="flex-shrink-0 w-10 h-10 flex items-center justify-center -ml-2"
             >
-              <ChevronLeft className="w-6 h-6 text-gray-900" />
+              <ChevronLeft className="w-6 h-6 text-gray-900 dark:text-gray-100" />
             </motion.button>
             {isEditingTitle ? (
               <input
@@ -918,12 +742,12 @@ export const EditorWorkspaceScreen: React.FC = () => {
             ) : (
               <h1
                 onClick={() => setIsEditingTitle(true)}
-                className="text-lg font-bold text-gray-900 cursor-pointer hover:text-golf-green transition-colors truncate"
+                className="text-lg font-bold text-gray-900 dark:text-gray-100 cursor-pointer hover:text-golf-green transition-colors truncate"
               >
                 {projectTitle}
               </h1>
             )}
-            {/* 자동 저장 상태 표시 */}
+            {/* 자동 저장 상태 */}
             <div className="flex items-center gap-1 flex-shrink-0 ml-2">
               {saveStatus === 'saved' && (
                 <>
@@ -981,115 +805,26 @@ export const EditorWorkspaceScreen: React.FC = () => {
       </div>
 
       {/* Preview Player */}
-      <div className="flex-shrink-0 bg-gray-900 relative" style={{ height: '45%' }}>
-        <div className="absolute inset-0 flex items-center justify-center p-6">
-          <div
-            ref={previewRef}
-            className="relative shadow-2xl overflow-hidden"
-            style={{
-              aspectRatio:
-                currentProject.aspectRatio === '16:9' ? '16/9' : currentProject.aspectRatio === '9:16' ? '9/16' : '1/1',
-              maxHeight: '100%',
-              maxWidth: currentProject.aspectRatio === '9:16' ? '60%' : '95%',
-            }}
-          >
-            {/* 썸네일 이미지 또는 기본 배경 */}
-            {currentProject.thumbnail ? (
-              <img
-                src={currentProject.thumbnail}
-                alt="미리보기"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center">
-                <Play className="w-16 h-16 text-gray-600" />
-              </div>
-            )}
-
-            {/* 재생 컨트롤 오버레이 */}
-            <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={handlePlayPause}
-                  className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors"
-                >
-                  {isPlaying ? (
-                    <Pause className="w-8 h-8 text-white" fill="currentColor" />
-                  ) : (
-                    <Play className="w-8 h-8 text-white ml-1" fill="currentColor" />
-                  )}
-                </motion.button>
-              </div>
-
-              <div className="absolute bottom-3 left-3 text-white text-xs font-mono bg-black/60 backdrop-blur-sm px-2 py-1 rounded">
-                {formatTime(currentTime)} / {formatTime(totalDuration)}
-              </div>
-
-              <motion.button 
-                whileTap={{ scale: 0.9 }} 
-                className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
-              >
-                <Maximize2 className="w-4 h-4 text-white" />
-              </motion.button>
-            </div>
-
-            {/* 텍스트 오버레이 (드래그 가능) */}
-            {timelineClips
-              .filter((clip) => clip.track === 'text')
-              .filter((clip) =>
-                currentTime >= clip.position &&
-                currentTime < clip.position + clip.duration
-              )
-              .map((clip) => (
-                <DraggableOverlay
-                  key={clip.id}
-                  clip={clip}
-                  type="text"
-                  containerRef={previewRef}
-                  onPositionChange={handleOverlayPositionChange}
-                  isSelected={selectedClipId === clip.id}
-                  onSelect={setSelectedClipId}
-                />
-              ))
-            }
-
-            {/* 스티커 오버레이 (드래그 가능) */}
-            {timelineClips
-              .filter((clip) => clip.track === 'sticker')
-              .filter((clip) =>
-                currentTime >= clip.position &&
-                currentTime < clip.position + clip.duration
-              )
-              .map((clip) => (
-                <DraggableOverlay
-                  key={clip.id}
-                  clip={clip}
-                  type="sticker"
-                  containerRef={previewRef}
-                  onPositionChange={handleOverlayPositionChange}
-                  isSelected={selectedClipId === clip.id}
-                  onSelect={setSelectedClipId}
-                />
-              ))
-            }
-
-            {/* 화면 비율 표시 */}
-            <div className="absolute top-3 right-3 px-2 py-0.5 bg-black/70 backdrop-blur-sm rounded text-xs text-white font-semibold">
-              {currentProject.aspectRatio || '16:9'}
-            </div>
-          </div>
-        </div>
-      </div>
+      <PreviewPlayer
+        currentProject={currentProject}
+        isPlaying={isPlaying}
+        currentTime={currentTime}
+        totalDuration={totalDuration}
+        timelineClips={timelineClips}
+        selectedClipId={selectedClipId}
+        previewRef={previewRef}
+        onPlayPause={handlePlayPause}
+        onOverlayPositionChange={handleOverlayPositionChange}
+        onSelectClip={setSelectedClipId}
+      />
 
       {/* Timeline Container */}
-      <div className="flex-1 flex flex-col bg-white overflow-hidden relative">
-        {/* 줌 컨트롤 (고정) */}
-        <div className="flex-shrink-0 px-4 py-2 bg-gray-100 border-b border-gray-200">
+      <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 overflow-hidden relative">
+        {/* 줌 컨트롤 */}
+        <div className="flex-shrink-0 px-4 py-2 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-600 font-medium">타임라인</span>
-              {/* AI 어시스턴트 버튼 */}
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowAssistantPanel(true)}
@@ -1117,53 +852,61 @@ export const EditorWorkspaceScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* 타임라인 스크롤 영역 (가로+세로 스크롤, 좌측 레이블은 sticky) */}
+        {/* 타임라인 스크롤 영역 */}
         <div
           ref={timelineRef}
           className="flex-1 overflow-auto scrollbar-hide cursor-grab active:cursor-grabbing"
           onScroll={(e) => {
             const target = e.target as HTMLElement;
             setScrollOffset(target.scrollLeft);
-            // 중앙 플레이헤드 위치 기준으로 실제 타임라인 시간 계산
-            const containerWidth = target.clientWidth;
-            const centerOffset = containerWidth / 2;
-            const playheadPixelPosition = target.scrollLeft + centerOffset;
-            const actualTimelinePosition = playheadPixelPosition - leftPadding - LABEL_WIDTH;
-            const time = actualTimelinePosition / (TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom);
-            setCurrentTime(Math.max(0, time));
+            // 재생 중이 아닐 때만 스크롤 위치에서 시간 갱신 (재생 중엔 훅이 관리)
+            if (!isPlaying) {
+              const containerWidth = target.clientWidth;
+              const centerOffset = containerWidth / 2;
+              const playheadPixelPosition = target.scrollLeft + centerOffset;
+              const actualTimelinePosition = playheadPixelPosition - leftPadding - LABEL_WIDTH;
+              const time = actualTimelinePosition / (TIMELINE_CONFIG.PIXELS_PER_SECOND * timelineZoom);
+              playbackSetCurrentTime(Math.max(0, time));
+            }
           }}
           onClick={(e) => {
-            // 빈 공간 클릭 시 선택 취소
             if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.timeline-background')) {
               setSelectedClipId(null);
             }
           }}
           onMouseDown={(e) => {
-            // 클립 또는 트림 핸들러 영역이면 스크롤 방지
             const target = e.target as HTMLElement;
             if (target.closest('.timeline-clip') || target.closest('.trim-handle') || target.closest('.track-label')) return;
-
+            // 재생 중 수동 스크롤 시 일시정지
+            if (isPlaying) {
+              isUserScrolling.current = true;
+              togglePlayPause();
+            }
             const el = e.currentTarget;
             const startX = e.pageX - el.offsetLeft;
             const scrollLeft = el.scrollLeft;
-
             const onMouseMove = (e: MouseEvent) => {
               const x = e.pageX - el.offsetLeft;
               const walk = (x - startX) * 2;
               el.scrollLeft = scrollLeft - walk;
             };
-
             const onMouseUp = () => {
               el.classList.remove('cursor-grabbing');
               el.classList.add('cursor-grab');
               document.removeEventListener('mousemove', onMouseMove);
               document.removeEventListener('mouseup', onMouseUp);
             };
-
             el.classList.remove('cursor-grab');
             el.classList.add('cursor-grabbing');
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
+          }}
+          onTouchStart={() => {
+            // 모바일 터치 스크롤 시 재생 일시정지
+            if (isPlaying) {
+              isUserScrolling.current = true;
+              togglePlayPause();
+            }
           }}
           style={{
             scrollbarWidth: 'none',
@@ -1171,22 +914,15 @@ export const EditorWorkspaceScreen: React.FC = () => {
             touchAction: 'pan-x pan-y',
           }}
         >
-          <style>{`
-            .timeline-scrollable::-webkit-scrollbar {
-              display: none;
-            }
-          `}</style>
+          <style>{`.timeline-scrollable::-webkit-scrollbar { display: none; }`}</style>
           <div
             className="relative timeline-background"
             style={{ width: `${scrollableWidth + LABEL_WIDTH}px`, minHeight: '100%' }}
           >
             {/* Time Ruler */}
             <div className="sticky top-0 z-20 h-6 bg-gray-100 border-b border-gray-200 flex">
-              {/* 좌측 레이블 공간 (sticky) */}
               <div className="sticky left-0 z-30 w-16 flex-shrink-0 bg-gray-100 border-r border-gray-200" />
-              {/* 좌측 여백 */}
               <div style={{ width: `${leftPadding}px`, flexShrink: 0 }} />
-              {/* 실제 타임라인 눈금 */}
               {Array.from({ length: Math.ceil(totalDuration / 5) }).map((_, i) => (
                 <div
                   key={i}
@@ -1198,149 +934,85 @@ export const EditorWorkspaceScreen: React.FC = () => {
               ))}
             </div>
 
-            {/* Video Track */}
-            <div className="h-16 bg-gray-50 border-b border-gray-200 relative timeline-background flex">
-              {/* 좌측 레이블 (sticky) */}
-              <div className="track-label sticky left-0 z-20 w-16 flex-shrink-0 bg-gray-100 border-r border-gray-200 flex items-center justify-center">
-                <span className="text-xs text-gray-600 font-medium">영상</span>
-              </div>
-              {/* 클립 영역 */}
-              <div className="flex-1 relative" style={{ paddingLeft: `${leftPadding}px` }}>
-                {timelineClips
-                  .filter((clip) => clip.track === 'video')
-                  .map((clip) => (
-                    <TimelineClip
-                      key={clip.id}
-                      clip={clip}
-                      isSelected={selectedClipId === clip.id}
-                      zoom={timelineZoom}
-                      isDraggable={true}
-                      leftPadding={leftPadding}
-                      isOverlapping={overlappingClipIds.has(clip.id)}
-                      allClips={timelineClips}
-                      onSelect={setSelectedClipId}
-                      onMove={moveClip}
-                      onTrimStart={trimClipStart}
-                      onTrimEnd={trimClipEnd}
-                      onSnapChange={handleSnapChange}
-                    />
-                  ))}
-              </div>
-            </div>
+            {/* 5개 트랙 */}
+            <TimelineTrack
+              trackType="video"
+              label="영상"
+              heightClass="h-16"
+              clips={videoClips}
+              allClips={timelineClips}
+              selectedClipIds={selectedClipIds}
+              isMultiSelectMode={isMultiSelectMode}
+              zoom={timelineZoom}
+              leftPadding={leftPadding}
+              overlappingClipIds={overlappingClipIds}
+              onSelect={setSelectedClipId}
+              onMove={moveClip}
+              onTrimStart={trimClipStart}
+              onTrimEnd={trimClipEnd}
+              onSnapChange={handleSnapChange}
+              onTransitionClick={handleTransitionClick}
+            />
 
-            {/* Text Track */}
-            <div className="h-12 bg-gray-50 border-b border-gray-200 relative timeline-background flex">
-              {/* 좌측 레이블 (sticky) */}
-              <button
-                className="track-label sticky left-0 z-20 w-16 flex-shrink-0 bg-gray-100 border-r border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"
-                onClick={() => setShowTextPanel(true)}
-              >
-                <span className="text-xs text-gray-600 font-medium">텍스트</span>
-              </button>
-              {/* 클립 영역 */}
-              <div className="flex-1 relative" style={{ paddingLeft: `${leftPadding}px` }}>
-                {timelineClips
-                  .filter((clip) => clip.track === 'text')
-                  .map((clip) => (
-                    <TimelineClip
-                      key={clip.id}
-                      clip={clip}
-                      isSelected={selectedClipId === clip.id}
-                      zoom={timelineZoom}
-                      isDraggable={true}
-                      leftPadding={leftPadding}
-                      isOverlapping={overlappingClipIds.has(clip.id)}
-                      allClips={timelineClips}
-                      onSelect={setSelectedClipId}
-                      onDoubleClick={(clip) => {
-                        setEditingTextClip(clip);
-                        setShowTextPanel(true);
-                      }}
-                      onMove={moveClip}
-                      onTrimStart={trimClipStart}
-                      onTrimEnd={trimClipEnd}
-                      onSnapChange={handleSnapChange}
-                    />
-                  ))
-                }
-              </div>
-            </div>
+            <TimelineTrack
+              trackType="text"
+              label="텍스트"
+              heightClass="h-12"
+              clips={textClips}
+              allClips={timelineClips}
+              selectedClipIds={selectedClipIds}
+              isMultiSelectMode={isMultiSelectMode}
+              zoom={timelineZoom}
+              leftPadding={leftPadding}
+              overlappingClipIds={overlappingClipIds}
+              onSelect={setSelectedClipId}
+              onMove={moveClip}
+              onTrimStart={trimClipStart}
+              onTrimEnd={trimClipEnd}
+              onSnapChange={handleSnapChange}
+              onLabelClick={() => setShowTextPanel(true)}
+              onDoubleClick={(clip) => { setEditingTextClip(clip); setShowTextPanel(true); }}
+            />
 
-            {/* Audio Track */}
-            <div className="h-12 bg-gray-50 border-b border-gray-200 relative timeline-background flex">
-              {/* 좌측 레이블 (sticky) */}
-              <button
-                className="track-label sticky left-0 z-20 w-16 flex-shrink-0 bg-gray-100 border-r border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"
-                onClick={() => setShowAudioPanel(true)}
-              >
-                <span className="text-xs text-gray-600 font-medium">오디오</span>
-              </button>
-              {/* 클립 영역 */}
-              <div className="flex-1 relative" style={{ paddingLeft: `${leftPadding}px` }}>
-                {timelineClips
-                  .filter((clip) => clip.track === 'audio')
-                  .map((clip) => (
-                    <TimelineClip
-                      key={clip.id}
-                      clip={clip}
-                      isSelected={selectedClipId === clip.id}
-                      zoom={timelineZoom}
-                      isDraggable={true}
-                      leftPadding={leftPadding}
-                      isOverlapping={overlappingClipIds.has(clip.id)}
-                      allClips={timelineClips}
-                      onSelect={setSelectedClipId}
-                      onDoubleClick={(clip) => {
-                        setEditingAudioClip(clip);
-                        setShowAudioPanel(true);
-                      }}
-                      onMove={moveClip}
-                      onTrimStart={trimClipStart}
-                      onTrimEnd={trimClipEnd}
-                      onSnapChange={handleSnapChange}
-                    />
-                  ))
-                }
-              </div>
-            </div>
+            <TimelineTrack
+              trackType="audio"
+              label="오디오"
+              heightClass="h-12"
+              clips={audioClips}
+              allClips={timelineClips}
+              selectedClipIds={selectedClipIds}
+              isMultiSelectMode={isMultiSelectMode}
+              zoom={timelineZoom}
+              leftPadding={leftPadding}
+              overlappingClipIds={overlappingClipIds}
+              onSelect={setSelectedClipId}
+              onMove={moveClip}
+              onTrimStart={trimClipStart}
+              onTrimEnd={trimClipEnd}
+              onSnapChange={handleSnapChange}
+              onLabelClick={() => setShowAudioPanel(true)}
+              onDoubleClick={(clip) => { setEditingAudioClip(clip); setShowAudioPanel(true); }}
+            />
 
-            {/* Filter Track */}
-            <div className="h-12 bg-gray-50 border-b border-gray-200 relative timeline-background flex">
-              {/* 좌측 레이블 (sticky) */}
-              <button
-                className="track-label sticky left-0 z-20 w-16 flex-shrink-0 bg-gray-100 border-r border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"
-                onClick={() => setShowFilterPanel(true)}
-              >
-                <span className="text-xs text-gray-600 font-medium">필터</span>
-              </button>
-              {/* 클립 영역 */}
-              <div className="flex-1 relative" style={{ paddingLeft: `${leftPadding}px` }}>
-                {timelineClips
-                  .filter((clip) => clip.track === 'filter')
-                  .map((clip) => (
-                    <TimelineClip
-                      key={clip.id}
-                      clip={clip}
-                      isSelected={selectedClipId === clip.id}
-                      zoom={timelineZoom}
-                      isDraggable={true}
-                      leftPadding={leftPadding}
-                      isOverlapping={overlappingClipIds.has(clip.id)}
-                      allClips={timelineClips}
-                      onSelect={setSelectedClipId}
-                      onDoubleClick={(clip) => {
-                        setEditingFilterClip(clip);
-                        setShowFilterPanel(true);
-                      }}
-                      onMove={moveClip}
-                      onTrimStart={trimClipStart}
-                      onTrimEnd={trimClipEnd}
-                      onSnapChange={handleSnapChange}
-                    />
-                  ))
-                }
-              </div>
-            </div>
+            <TimelineTrack
+              trackType="filter"
+              label="필터"
+              heightClass="h-12"
+              clips={filterClips}
+              allClips={timelineClips}
+              selectedClipIds={selectedClipIds}
+              isMultiSelectMode={isMultiSelectMode}
+              zoom={timelineZoom}
+              leftPadding={leftPadding}
+              overlappingClipIds={overlappingClipIds}
+              onSelect={setSelectedClipId}
+              onMove={moveClip}
+              onTrimStart={trimClipStart}
+              onTrimEnd={trimClipEnd}
+              onSnapChange={handleSnapChange}
+              onLabelClick={() => setShowFilterPanel(true)}
+              onDoubleClick={(clip) => { setEditingFilterClip(clip); setShowFilterPanel(true); }}
+            />
 
             {/* 스냅 가이드라인 */}
             {snapGuide.visible && (
@@ -1354,47 +1026,29 @@ export const EditorWorkspaceScreen: React.FC = () => {
               </div>
             )}
 
-            {/* Sticker Track */}
-            <div className="h-12 bg-gray-50 border-b border-gray-200 relative timeline-background flex">
-              {/* 좌측 레이블 (sticky) */}
-              <button
-                className="track-label sticky left-0 z-20 w-16 flex-shrink-0 bg-gray-100 border-r border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"
-                onClick={() => setShowStickerPanel(true)}
-              >
-                <span className="text-xs text-gray-600 font-medium">스티커</span>
-              </button>
-              {/* 클립 영역 */}
-              <div className="flex-1 relative" style={{ paddingLeft: `${leftPadding}px` }}>
-                {timelineClips
-                  .filter((clip) => clip.track === 'sticker')
-                  .map((clip) => (
-                    <TimelineClip
-                      key={clip.id}
-                      clip={clip}
-                      isSelected={selectedClipId === clip.id}
-                      zoom={timelineZoom}
-                      isDraggable={true}
-                      leftPadding={leftPadding}
-                      isOverlapping={overlappingClipIds.has(clip.id)}
-                      allClips={timelineClips}
-                      onSelect={setSelectedClipId}
-                      onDoubleClick={(clip) => {
-                        setEditingStickerClip(clip);
-                        setShowStickerPanel(true);
-                      }}
-                      onMove={moveClip}
-                      onTrimStart={trimClipStart}
-                      onTrimEnd={trimClipEnd}
-                      onSnapChange={handleSnapChange}
-                    />
-                  ))
-                }
-              </div>
-            </div>
+            <TimelineTrack
+              trackType="sticker"
+              label="스티커"
+              heightClass="h-12"
+              clips={stickerClips}
+              allClips={timelineClips}
+              selectedClipIds={selectedClipIds}
+              isMultiSelectMode={isMultiSelectMode}
+              zoom={timelineZoom}
+              leftPadding={leftPadding}
+              overlappingClipIds={overlappingClipIds}
+              onSelect={setSelectedClipId}
+              onMove={moveClip}
+              onTrimStart={trimClipStart}
+              onTrimEnd={trimClipEnd}
+              onSnapChange={handleSnapChange}
+              onLabelClick={() => setShowStickerPanel(true)}
+              onDoubleClick={(clip) => { setEditingStickerClip(clip); setShowStickerPanel(true); }}
+            />
           </div>
         </div>
 
-        {/* Centered Playhead - Fixed to container */}
+        {/* Centered Playhead */}
         <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-red-500 z-30 pointer-events-none">
           <div
             className="absolute left-1/2 -translate-x-1/2 w-3 h-3 bg-red-500 rounded-full"
@@ -1407,100 +1061,29 @@ export const EditorWorkspaceScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Bottom Toolbar - 트랙별 조작 버튼 */}
-      <div className="flex-shrink-0 bg-white border-t border-gray-200 safe-area-bottom">
-        <div className="flex items-center justify-around py-3 px-2">
-          {/* 다중선택 - 모든 트랙 */}
-          <motion.button 
-            whileTap={{ scale: 0.95 }} 
-            onClick={handleMultiSelect}
-            disabled={!selectedClipId}
-            className={`flex flex-col items-center gap-0.5 min-w-0 ${!selectedClipId ? 'opacity-40' : ''}`}
-          >
-            <CheckSquare className="w-5 h-5 text-gray-700" />
-            <span className="text-xs text-gray-600">다중선택</span>
-          </motion.button>
+      {/* Bottom Toolbar */}
+      <EditorToolbar
+        selectedClipId={selectedClipId}
+        selectedClip={selectedClip}
+        selectedCount={selectedClipIds.size}
+        isMultiSelectMode={isMultiSelectMode}
+        onMultiSelect={handleMultiSelect}
+        onDeleteSelected={deleteSelectedClips}
+        onSplitClip={handleSplitClip}
+        onShowSpeedPanel={() => setShowSpeedPanel(true)}
+        onShowVolumePanel={() => setShowVolumePanel(true)}
+        onEditClip={handleEditClip}
+        onDuplicateClip={handleDuplicateClip}
+        onShowDeleteConfirm={() => setShowDeleteConfirm(true)}
+      />
 
-          {/* 분할 - 영상/오디오/필터만 (텍스트/스티커 제외) */}
-          {selectedClip && selectedClip.track !== 'text' && selectedClip.track !== 'sticker' && (
-            <motion.button 
-              whileTap={{ scale: 0.95 }} 
-              onClick={handleSplitClip}
-              className="flex flex-col items-center gap-0.5 min-w-0"
-            >
-              <Scissors className="w-5 h-5 text-gray-700" />
-              <span className="text-xs text-gray-600">분할</span>
-            </motion.button>
-          )}
-
-          {/* 속도 - 영상만 */}
-          {selectedClip && selectedClip.track === 'video' && (
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowSpeedPanel(true)}
-              className="flex flex-col items-center gap-0.5 min-w-0"
-            >
-              <Gauge className="w-5 h-5 text-gray-700" />
-              <span className="text-xs text-gray-600">속도</span>
-            </motion.button>
-          )}
-
-          {/* 볼륨 - 영상만 */}
-          {selectedClip && selectedClip.track === 'video' && (
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowVolumePanel(true)}
-              className="flex flex-col items-center gap-0.5 min-w-0"
-            >
-              <Volume2 className="w-5 h-5 text-gray-700" />
-              <span className="text-xs text-gray-600">볼륨</span>
-            </motion.button>
-          )}
-
-          {/* 수정 - 텍스트/오디오/필터/스티커 트랙만 */}
-          {selectedClip && (selectedClip.track === 'text' || selectedClip.track === 'audio' || selectedClip.track === 'filter' || selectedClip.track === 'sticker') && (
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={handleEditClip}
-              className="flex flex-col items-center gap-0.5 min-w-0"
-            >
-              <Pencil className="w-5 h-5 text-gray-700" />
-              <span className="text-xs text-gray-600">수정</span>
-            </motion.button>
-          )}
-
-          {/* 복제 - 모든 트랙 */}
-          <motion.button 
-            whileTap={{ scale: 0.95 }} 
-            onClick={handleDuplicateClip}
-            disabled={!selectedClipId}
-            className={`flex flex-col items-center gap-0.5 min-w-0 ${!selectedClipId ? 'opacity-40' : ''}`}
-          >
-            <CopyIcon className="w-5 h-5 text-gray-700" />
-            <span className="text-xs text-gray-600">복제</span>
-          </motion.button>
-
-          {/* 삭제 - 모든 트랙 */}
-          <motion.button 
-            whileTap={{ scale: 0.95 }} 
-            onClick={() => setShowDeleteConfirm(true)}
-            disabled={!selectedClipId}
-            className={`flex flex-col items-center gap-0.5 min-w-0 ${!selectedClipId ? 'opacity-40' : ''}`}
-          >
-            <Trash2 className="w-5 h-5 text-red-600" />
-            <span className="text-xs text-gray-600">삭제</span>
-          </motion.button>
-        </div>
-      </div>
-
-      {/* Speed Panel */}
+      {/* Panels */}
       <AnimatePresence>
         {showSpeedPanel && selectedClip && (
           <SpeedPanel currentSpeed={selectedClip.speed || 1} onApply={handleApplySpeed} onClose={() => setShowSpeedPanel(false)} />
         )}
       </AnimatePresence>
 
-      {/* Clip Volume Panel */}
       <AnimatePresence>
         {showVolumePanel && selectedClip && selectedClip.track === 'video' && (
           <ClipVolumePanel
@@ -1512,15 +1095,11 @@ export const EditorWorkspaceScreen: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Filter Panel */}
       <AnimatePresence>
         {showFilterPanel && (
-          <FilterPanel 
-            onApply={handleApplyFilter} 
-            onClose={() => {
-              setShowFilterPanel(false);
-              setEditingFilterClip(null);
-            }}
+          <FilterPanel
+            onApply={handleApplyFilter}
+            onClose={() => { setShowFilterPanel(false); setEditingFilterClip(null); }}
             currentFilters={editingFilterClip ? {
               brightness: editingFilterClip.filterBrightness || 0,
               contrast: editingFilterClip.filterContrast || 0,
@@ -1532,15 +1111,11 @@ export const EditorWorkspaceScreen: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Audio Panel */}
       <AnimatePresence>
         {showAudioPanel && (
-          <AudioPanel 
-            onApply={handleApplyAudio} 
-            onClose={() => {
-              setShowAudioPanel(false);
-              setEditingAudioClip(null);
-            }}
+          <AudioPanel
+            onApply={handleApplyAudio}
+            onClose={() => { setShowAudioPanel(false); setEditingAudioClip(null); }}
             currentAudio={editingAudioClip ? {
               volume: editingAudioClip.audioVolume || 100,
               muted: editingAudioClip.audioMuted || false,
@@ -1550,15 +1125,11 @@ export const EditorWorkspaceScreen: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Text Panel */}
       <AnimatePresence>
         {showTextPanel && (
           <TextPanel
             onAdd={handleAddText}
-            onClose={() => {
-              setShowTextPanel(false);
-              setEditingTextClip(null);
-            }}
+            onClose={() => { setShowTextPanel(false); setEditingTextClip(null); }}
             editingText={editingTextClip ? {
               id: editingTextClip.id,
               content: editingTextClip.textContent || '',
@@ -1580,15 +1151,11 @@ export const EditorWorkspaceScreen: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Sticker Panel */}
       <AnimatePresence>
         {showStickerPanel && (
           <StickerPanel
             onAdd={handleAddSticker}
-            onClose={() => {
-              setShowStickerPanel(false);
-              setEditingStickerClip(null);
-            }}
+            onClose={() => { setShowStickerPanel(false); setEditingStickerClip(null); }}
             editingSticker={editingStickerClip ? {
               id: editingStickerClip.id,
               stickerId: editingStickerClip.stickerId || '',
@@ -1603,7 +1170,6 @@ export const EditorWorkspaceScreen: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* AI Assistant Panel */}
       <AnimatePresence>
         {showAssistantPanel && (
           <AssistantPanel
@@ -1614,21 +1180,27 @@ export const EditorWorkspaceScreen: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Export Panel */}
+      <AnimatePresence>
+        {showTransitionPanel && (
+          <TransitionPanel
+            currentTransition={editingTransitionType}
+            onApply={handleApplyTransition}
+            onClose={() => { setShowTransitionPanel(false); setEditingTransitionClipId(null); }}
+          />
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {showExportPanel && (
           <ExportPanel
             projectName={projectTitle}
             onClose={() => setShowExportPanel(false)}
             onComplete={(mode) => {
-              // 내보내기 완료 시 편집 내용 저장
               saveProject();
               setShowExportPanel(false);
               if (mode === 'dashboard') {
-                // 대시보드로 이동
                 setCurrentScreen('create');
               }
-              // 'continue' 또는 mode가 없으면 에디터 유지
             }}
           />
         )}
