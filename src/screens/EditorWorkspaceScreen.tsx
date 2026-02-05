@@ -329,6 +329,12 @@ export const EditorWorkspaceScreen: React.FC = () => {
     return overlapping;
   }, [timelineClips]);
 
+  /** 프로젝트에 샷 메타데이터가 있는지 확인 */
+  const shotMetadata = useMemo(() => {
+    const clipsWithData = currentProject?.clips?.filter((c) => c.shotData) || [];
+    return clipsWithData.length > 0 ? clipsWithData[0].shotData : null;
+  }, [currentProject]);
+
   // 트랙별 클립 필터링
   const videoClips = useMemo(() => timelineClips.filter((c) => c.track === 'video'), [timelineClips]);
   const textClips = useMemo(() => timelineClips.filter((c) => c.track === 'text'), [timelineClips]);
@@ -826,9 +832,15 @@ export const EditorWorkspaceScreen: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-600 font-medium">타임라인</span>
               <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowAssistantPanel(true)}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg bg-golf-green/10 text-golf-green hover:bg-golf-green/20 transition-colors"
+                whileTap={shotMetadata ? { scale: 0.95 } : undefined}
+                onClick={() => shotMetadata && setShowAssistantPanel(true)}
+                disabled={!shotMetadata}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-colors ${
+                  shotMetadata
+                    ? 'bg-golf-green/10 text-golf-green hover:bg-golf-green/20'
+                    : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                }`}
+                title={shotMetadata ? 'AI 어시스턴트' : '메타데이터가 없는 미디어입니다'}
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 <span className="text-xs font-medium">AI</span>
@@ -1171,11 +1183,12 @@ export const EditorWorkspaceScreen: React.FC = () => {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showAssistantPanel && (
+        {showAssistantPanel && shotMetadata && (
           <AssistantPanel
             onAdd={handleAddAssistantItems}
             onClose={() => setShowAssistantPanel(false)}
             currentTime={getPlayheadTime()}
+            shotMetadata={shotMetadata}
           />
         )}
       </AnimatePresence>
@@ -1195,12 +1208,9 @@ export const EditorWorkspaceScreen: React.FC = () => {
           <ExportPanel
             projectName={projectTitle}
             onClose={() => setShowExportPanel(false)}
-            onComplete={(mode) => {
+            onComplete={() => {
               saveProject();
               setShowExportPanel(false);
-              if (mode === 'dashboard') {
-                setCurrentScreen('create');
-              }
             }}
           />
         )}

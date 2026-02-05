@@ -775,7 +775,7 @@ export const useTimeline = (initialClips: TimelineItem[] = []) => {
    * @param clip - 추가할 클립 객체
    */
   const addClip = (clip: TimelineItem) => {
-    setTimelineClips([...timelineClips, clip]);
+    setTimelineClips((prev) => [...prev, clip]);
   };
 
   /**

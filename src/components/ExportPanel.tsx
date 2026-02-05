@@ -7,12 +7,12 @@
  * ## 단계 흐름
  * 1. settings: 화질, 포맷 선택
  * 2. rendering: 렌더링 진행 (취소 가능)
- * 3. complete: 공유/다운로드/대시보드/계속편집 선택
+ * 3. complete: 공유/다운로드/계속편집 선택
  */
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Share2, Download, Check, Home, Edit3 } from 'lucide-react';
+import { X, Share2, Download, Check, Edit3 } from 'lucide-react';
 import { ShareDialog } from './ShareDialog';
 
 interface ExportPanelProps {
@@ -20,8 +20,8 @@ interface ExportPanelProps {
   projectName: string;
   /** 패널 닫기 콜백 */
   onClose: () => void;
-  /** 완료 후 콜백 (mode: 'dashboard' | 'continue') */
-  onComplete: (mode?: 'dashboard' | 'continue') => void;
+  /** 완료 후 콜백 (mode: 'continue') */
+  onComplete: (mode?: 'continue') => void;
 }
 
 type ExportStep = 'settings' | 'rendering' | 'complete' | 'download-complete';
@@ -110,8 +110,8 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ projectName, onClose, 
     // 실제로는 공유 API 호출
     console.log('공유하기:', { title, content, projectName, quality, format });
     setShowShareDialog(false);
-    // 공유 완료 후 메인화면(대시보드)으로 이동
-    onComplete('dashboard');
+    // 공유 완료 후 계속 편집
+    onComplete('continue');
   };
 
   const handleDownload = () => {
@@ -122,8 +122,8 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ projectName, onClose, 
   };
 
   const handleDownloadConfirm = () => {
-    // 다운로드 완료 확인 후 대시보드로 이동
-    onComplete('dashboard');
+    // 다운로드 완료 확인 후 계속 편집
+    onComplete('continue');
   };
 
   return (
@@ -344,7 +344,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ projectName, onClose, 
 
               {/* Action Buttons */}
               <div className="space-y-3">
-                {/* 공유/다운로드 버튼 */}
                 <div className="flex gap-3">
                   <motion.button
                     whileTap={{ scale: 0.98 }}
@@ -363,33 +362,14 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ projectName, onClose, 
                     다운로드
                   </motion.button>
                 </div>
-
-                {/* 구분선 */}
-                <div className="flex items-center gap-3 py-2">
-                  <div className="flex-1 h-px bg-gray-600" />
-                  <span className="text-xs text-gray-500">다음 작업</span>
-                  <div className="flex-1 h-px bg-gray-600" />
-                </div>
-
-                {/* 다음 작업 버튼 */}
-                <div className="flex gap-3">
-                  <motion.button
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => onComplete('dashboard')}
-                    className="flex-1 py-3 rounded-xl bg-gray-700 text-white font-medium flex items-center justify-center gap-2"
-                  >
-                    <Home className="w-4 h-4" />
-                    대시보드
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => onComplete('continue')}
-                    className="flex-1 py-3 rounded-xl bg-gray-700 text-white font-medium flex items-center justify-center gap-2"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                    계속 편집
-                  </motion.button>
-                </div>
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onComplete('continue')}
+                  className="w-full py-4 rounded-xl bg-gray-700 text-white font-medium flex items-center justify-center gap-2"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  계속 편집
+                </motion.button>
               </div>
             </motion.div>
           )}

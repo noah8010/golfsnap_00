@@ -6,7 +6,7 @@
  * 시나리오 선택 없이 자동 분석됩니다.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Sparkles, Check, Loader2, RefreshCw } from 'lucide-react';
 import { ShotData, TimelineItem } from '../types/golf';
@@ -19,59 +19,9 @@ interface AssistantPanelProps {
   onClose: () => void;
   /** 현재 타임라인 시간 (새 아이템 위치) */
   currentTime: number;
-  /** 영상의 샷 메타데이터 (선택적) */
-  shotMetadata?: Partial<ShotData>;
+  /** 영상의 샷 메타데이터 */
+  shotMetadata: Partial<ShotData>;
 }
-
-/**
- * 시뮬레이션용 샘플 메타데이터 생성
- * 프로토타입에서 실제 메타데이터가 없을 때 사용
- */
-const generateSimulatedMetadata = (): Partial<ShotData> => {
-  // 여러 시나리오 중 랜덤 선택
-  const scenarios: Partial<ShotData>[] = [
-    {
-      distance: 285,
-      ballSpeed: 168,
-      launchAngle: 13,
-      accuracy: 92,
-      club: 'Driver',
-      spinRate: 2600,
-      holeResult: 'birdie',
-      remainingDistance: 8,
-    },
-    {
-      distance: 305,
-      ballSpeed: 172,
-      launchAngle: 11,
-      accuracy: 88,
-      club: 'Driver',
-      spinRate: 2400,
-    },
-    {
-      distance: 155,
-      ballSpeed: 138,
-      launchAngle: 22,
-      accuracy: 96,
-      club: '8Iron',
-      spinRate: 4200,
-      holeResult: 'eagle',
-      remainingDistance: 2,
-    },
-    {
-      distance: 142,
-      ballSpeed: 132,
-      launchAngle: 24,
-      accuracy: 98,
-      club: '9Iron',
-      spinRate: 4500,
-      remainingDistance: 4,
-      holeResult: 'birdie',
-    },
-  ];
-
-  return scenarios[Math.floor(Math.random() * scenarios.length)];
-};
 
 export const AssistantPanel: React.FC<AssistantPanelProps> = ({
   onAdd,
@@ -91,13 +41,9 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
     selectedCount,
   } = useSmartAssistant();
 
-  const [currentMetadata, setCurrentMetadata] = useState<Partial<ShotData> | null>(null);
-
-  // 패널 열릴 때 자동 분석
+  // 패널 열릴 때 전달받은 메타데이터로 자동 분석
   useEffect(() => {
-    const metadata = shotMetadata || generateSimulatedMetadata();
-    setCurrentMetadata(metadata);
-    analyzeShotData(metadata);
+    analyzeShotData(shotMetadata);
   }, [shotMetadata, analyzeShotData]);
 
   // ESC 키로 패널 닫기
@@ -113,12 +59,10 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
   }, [onClose]);
 
   /**
-   * 메타데이터 다시 분석 (다른 시나리오로)
+   * 현재 메타데이터로 다시 분석
    */
   const handleRefreshAnalysis = () => {
-    const newMetadata = generateSimulatedMetadata();
-    setCurrentMetadata(newMetadata);
-    analyzeShotData(newMetadata);
+    analyzeShotData(shotMetadata);
   };
 
   /**
@@ -146,13 +90,13 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
    * 메타데이터 요약 표시
    */
   const renderMetadataSummary = () => {
-    if (!currentMetadata) return null;
+    if (!shotMetadata) return null;
 
     const items = [];
-    if (currentMetadata.distance) items.push(`${currentMetadata.distance}yd`);
-    if (currentMetadata.ballSpeed) items.push(`${currentMetadata.ballSpeed}mph`);
-    if (currentMetadata.club) items.push(currentMetadata.club);
-    if (currentMetadata.holeResult) {
+    if (shotMetadata.distance) items.push(`${shotMetadata.distance}yd`);
+    if (shotMetadata.ballSpeed) items.push(`${shotMetadata.ballSpeed}mph`);
+    if (shotMetadata.club) items.push(shotMetadata.club);
+    if (shotMetadata.holeResult) {
       const resultNames: Record<string, string> = {
         'hole-in-one': '홀인원',
         'eagle': '이글',
@@ -161,7 +105,7 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
         'bogey': '보기',
         'double-bogey': '더블보기',
       };
-      items.push(resultNames[currentMetadata.holeResult] || currentMetadata.holeResult);
+      items.push(resultNames[shotMetadata.holeResult] || shotMetadata.holeResult);
     }
 
     return (
