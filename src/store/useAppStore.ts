@@ -14,7 +14,7 @@
  */
 
 import { create } from 'zustand';
-import { ShotData, VideoClip, Project, TimelineItem, MediaItem, AspectRatio } from '../types/golf';
+import { ShotData, VideoClip, Project, TimelineItem, MediaItem, AspectRatio, ClubType } from '../types/golf';
 import { ProjectTemplate } from '../constants/templates';
 
 // ============================================================================
@@ -365,6 +365,71 @@ export const useAppStore = create<AppState>((set) => ({
     const projectId = `project-${Date.now()}`;
     const now = Date.now();
 
+    /**
+     * 미디어 메타데이터에서 클럽 한글명을 ClubType으로 변환
+     */
+    const mapClubType = (clubType?: string): ClubType => {
+      if (!clubType) return 'Driver';
+      const clubMap: Record<string, ClubType> = {
+        '드라이버': 'Driver',
+        '3번 우드': '3Wood',
+        '5번 우드': '5Wood',
+        '3번 아이언': '3Iron',
+        '4번 아이언': '4Iron',
+        '5번 아이언': '5Iron',
+        '6번 아이언': '6Iron',
+        '7번 아이언': '7Iron',
+        '8번 아이언': '8Iron',
+        '9번 아이언': '9Iron',
+        '피칭웨지': 'PW',
+        '샌드웨지': 'SW',
+        '퍼터': 'Putter',
+      };
+      return clubMap[clubType] || 'Driver';
+    };
+
+    /**
+     * 클럽 타입에 따른 시뮬레이션 ShotData 생성
+     */
+    const generateShotData = (media: MediaItem, index: number): ShotData => {
+      const club = mapClubType(media.metadata?.clubType);
+      const clubSpeed = media.metadata?.swingSpeed || 100;
+      // 클럽에 따른 합리적인 기본값 생성
+      const distanceMap: Record<string, number> = {
+        'Driver': 260, '3Wood': 230, '5Wood': 210,
+        '3Iron': 200, '4Iron': 190, '5Iron': 175, '6Iron': 165,
+        '7Iron': 155, '8Iron': 145, '9Iron': 135,
+        'PW': 120, 'SW': 90, 'Putter': 5,
+      };
+      return {
+        id: `shot-${projectId}-${index}`,
+        timestamp: now,
+        ballSpeed: Math.round(clubSpeed * 1.5),
+        clubSpeed,
+        launchAngle: club === 'Driver' ? 12 : club === 'Putter' ? 2 : 20,
+        backSpin: club === 'Putter' ? 500 : 3000,
+        sideSpin: 0,
+        distance: distanceMap[club] || 200,
+        accuracy: 90,
+        club,
+        spinRate: club === 'Putter' ? 500 : 3000,
+      };
+    };
+
+    // 메타데이터 있는 미디어에서 VideoClip 생성
+    const videoClips: VideoClip[] = selectedMedia
+      .filter((media) => media.hasMetadata && media.metadata)
+      .map((media, index) => ({
+        id: `clip-${projectId}-vc-${index}`,
+        shotId: `shot-${projectId}-${index}`,
+        startTime: 0,
+        endTime: media.duration || 5,
+        duration: media.duration || 5,
+        thumbnail: media.thumbnail,
+        videoUrl: media.uri,
+        shotData: generateShotData(media, index),
+      }));
+
     // 선택된 미디어로 비디오 타임라인 클립 생성
     let currentPosition = 0;
     const videoTimeline: TimelineItem[] = selectedMedia.map((media, index) => {
@@ -410,7 +475,7 @@ export const useAppStore = create<AppState>((set) => ({
         : `새 프로젝트 ${state.projects.length + 1}`,
       createdAt: now,
       updatedAt: now,
-      clips: [],
+      clips: videoClips,
       timeline: [...videoTimeline, ...templateClips],
       duration: totalDuration,
       aspectRatio,

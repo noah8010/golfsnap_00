@@ -1,6 +1,6 @@
 # GolfSnap Mobile - 프로젝트 현황
 
-> **최종 업데이트**: 2026-02-05
+> **최종 업데이트**: 2026-02-09
 > **완성도**: 99%
 
 ---
@@ -53,6 +53,10 @@ React 18 + TypeScript 5 + Vite 5 + Zustand + Tailwind CSS + Framer Motion
 | **프로젝트 템플릿** | 4가지 프리셋 (기존 프로젝트 생성 흐름 연동) |
 | **다크/라이트 모드** | localStorage 기반 테마 전환, 시스템 설정 감지 |
 | **에디터 리팩토링** | EditorToolbar, PreviewPlayer, TimelineTrack 컴포넌트 분리 |
+| **인앱 토스트 메시지** | useToastStore + Toast 컴포넌트, alert() 전면 제거 |
+| **미리보기 필터 피드백** | CSS filter 기반 프리셋/커스텀 필터 실시간 미리보기, 필터 라벨 표시 |
+| **하단 네비게이션 전체 활성화** | 5개 탭 모두 활성화, 미확정 화면에 프로토타입 배너 |
+| **빈 상태(Empty State) UI** | 타임라인 빈 트랙 힌트, 대시보드 빈 프로젝트 안내 |
 
 ### 부분 완료
 
@@ -60,6 +64,12 @@ React 18 + TypeScript 5 + Vite 5 + Zustand + Tailwind CSS + Framer Motion
 |------|--------|------|
 | 미리보기 | 70% | 재생 시뮬레이션 구현, 실제 비디오 재생 미구현 |
 | 내보내기 | 50% | 시뮬레이션 (실제 렌더링 미구현) |
+
+### 해결된 이슈
+
+| 이슈 | 상태 | 설명 |
+|------|------|------|
+| AI 버튼 활성화 | ✅ 해결됨 | createNewProject에서 metadata → shotData 변환 로직 수정 완료 |
 
 ---
 

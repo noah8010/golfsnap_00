@@ -20,8 +20,8 @@ interface ExportPanelProps {
   projectName: string;
   /** 패널 닫기 콜백 */
   onClose: () => void;
-  /** 완료 후 콜백 (mode: 'continue') */
-  onComplete: (mode?: 'continue') => void;
+  /** 완료 후 콜백 (mode: 'dashboard' → 대시보드 이동, 'continue' → 편집 유지) */
+  onComplete: (mode?: 'dashboard' | 'continue') => void;
 }
 
 type ExportStep = 'settings' | 'rendering' | 'complete' | 'download-complete';
@@ -110,8 +110,8 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ projectName, onClose, 
     // 실제로는 공유 API 호출
     console.log('공유하기:', { title, content, projectName, quality, format });
     setShowShareDialog(false);
-    // 공유 완료 후 계속 편집
-    onComplete('continue');
+    // 공유 완료 후 대시보드로 이동
+    onComplete('dashboard');
   };
 
   const handleDownload = () => {
@@ -122,8 +122,8 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ projectName, onClose, 
   };
 
   const handleDownloadConfirm = () => {
-    // 다운로드 완료 확인 후 계속 편집
-    onComplete('continue');
+    // 다운로드 완료 확인 후 대시보드로 이동
+    onComplete('dashboard');
   };
 
   return (

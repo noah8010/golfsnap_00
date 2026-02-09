@@ -12,15 +12,10 @@ interface NewProjectStep2ScreenProps {
   isShareMode?: boolean;
 }
 
-// 확장된 미디어 아이템 타입 (날짜, 메타데이터 포함)
+// 확장된 미디어 아이템 타입 (날짜 포함)
+// hasMetadata, metadata는 MediaItem 베이스 타입에 정의됨
 interface ExtendedMediaItem extends MediaItem {
   createdAt: Date;
-  hasMetadata: boolean;
-  metadata?: {
-    clubType?: string;
-    swingSpeed?: number;
-    location?: string;
-  };
 }
 
 // Mock 미디어 데이터 (날짜, 메타데이터 포함)

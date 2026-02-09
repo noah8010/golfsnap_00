@@ -3,14 +3,13 @@
  * @description 하단 탭 네비게이션 컴포넌트
  *
  * 5개의 메인 탭을 제공하는 하단 네비게이션 바입니다.
- * 현재 프로토타입에서는 '만들기' 탭만 활성화되어 있습니다.
  *
  * ## 탭 구성
- * - 홈: 메인 화면 (준비 중)
- * - 탐색: 샷 탐색 (준비 중)
- * - 만들기: 프로젝트 대시보드 (활성화)
- * - 예약: 예약 기능 (준비 중)
- * - 나: 프로필 (준비 중)
+ * - 홈: 메인 화면
+ * - 탐색: 샷 탐색
+ * - 만들기: 프로젝트 대시보드 (핵심 프로토타입)
+ * - 예약: 예약 기능
+ * - 나: 프로필
  */
 
 import React from 'react';
@@ -21,13 +20,13 @@ import { useAppStore } from '../store/useAppStore';
 export const BottomNavigation: React.FC = () => {
   const { currentScreen, setCurrentScreen } = useAppStore();
 
-  // 탭 아이템 정의 - '만들기'만 활성화
+  // 탭 아이템 정의 - 모든 탭 활성화
   const navItems = [
-    { id: 'home' as const, icon: Home, label: '홈', disabled: true },
-    { id: 'explore' as const, icon: Compass, label: '탐색', disabled: true },
+    { id: 'home' as const, icon: Home, label: '홈', disabled: false },
+    { id: 'explore' as const, icon: Compass, label: '탐색', disabled: false },
     { id: 'create' as const, icon: Plus, label: '만들기', disabled: false },
-    { id: 'booking' as const, icon: Calendar, label: '예약', disabled: true },
-    { id: 'profile' as const, icon: User, label: '나', disabled: true },
+    { id: 'booking' as const, icon: Calendar, label: '예약', disabled: false },
+    { id: 'profile' as const, icon: User, label: '나', disabled: false },
   ];
 
   /**
@@ -105,10 +104,7 @@ export const BottomNavigation: React.FC = () => {
                 {item.disabled && !isCreateTab ? `${item.label}` : item.label}
               </span>
 
-              {/* 준비 중 표시 (비활성 탭) */}
-              {item.disabled && (
-                <span className="text-[8px] text-gray-300 -mt-0.5">준비중</span>
-              )}
+              {/* (삭제: 준비중 표시 불필요) */}
             </motion.button>
           );
         })}

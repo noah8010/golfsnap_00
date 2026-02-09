@@ -141,6 +141,15 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
       {/* 클립 영역 */}
       <div className="flex-1 relative" style={{ paddingLeft: `${leftPadding}px` }}>
+        {/* 빈 트랙 힌트 */}
+        {clips.length === 0 && (
+          <div className="absolute inset-0 flex items-center pl-4 pointer-events-none">
+            <span className="text-[10px] text-gray-400 whitespace-nowrap">
+              {onLabelClick ? `+ ${label} 추가` : `${label} 없음`}
+            </span>
+          </div>
+        )}
+
         {clips.map((clip) => (
           <TimelineClip
             key={clip.id}

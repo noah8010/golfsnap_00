@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { useHistoryStore } from '../store/useHistoryStore';
+import { useToastStore } from '../store/useToastStore';
 import { TimelineItem, TransitionType } from '../types/golf';
 import { SpeedPanel } from '../components/SpeedPanel';
 import { FilterPanel, FilterSettings } from '../components/FilterPanel';
@@ -408,7 +409,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
     const clip = timelineClips.find((c) => c.id === selectedClipId);
     if (!clip) return;
     if (clip.track === 'text' || clip.track === 'sticker') {
-      alert('텍스트/스티커 클립은 분할할 수 없습니다');
+      useToastStore.getState().show('텍스트/스티커 클립은 분할할 수 없습니다', 'warning');
       return;
     }
     if (!timelineRef.current) return;
@@ -426,13 +427,13 @@ export const EditorWorkspaceScreen: React.FC = () => {
     const clipStart = clip.position;
     const clipEnd = clip.position + clip.duration;
     if (playheadTime < clipStart || playheadTime > clipEnd) {
-      alert('중앙 플레이헤드가 클립 위에 있지 않습니다');
+      useToastStore.getState().show('중앙 플레이헤드가 클립 위에 있지 않습니다', 'warning');
       return;
     }
     const splitPoint = playheadTime - clip.position;
     const success = splitClip(selectedClipId, splitPoint);
     if (!success) {
-      alert('분할할 수 없습니다. 최소 길이를 확인하세요.');
+      useToastStore.getState().show('분할할 수 없습니다. 최소 길이를 확인하세요.', 'warning');
     }
   };
 
@@ -549,7 +550,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
       const playheadTime = getPlayheadTime();
       const vClips = timelineClips.filter((c) => c.track === 'video');
       if (vClips.length === 0) {
-        alert('먼저 비디오 클립을 추가해주세요');
+        useToastStore.getState().show('먼저 비디오 클립을 추가해주세요', 'info');
         setShowFilterPanel(false);
         setEditingFilterClip(null);
         return;
@@ -590,7 +591,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
       const playheadTime = getPlayheadTime();
       const vClips = timelineClips.filter((c) => c.track === 'video');
       if (vClips.length === 0) {
-        alert('먼저 비디오 클립을 추가해주세요');
+        useToastStore.getState().show('먼저 비디오 클립을 추가해주세요', 'info');
         setShowAudioPanel(false);
         return;
       }
@@ -634,7 +635,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
       const playheadTime = getPlayheadTime();
       const vClips = timelineClips.filter((c) => c.track === 'video');
       if (vClips.length === 0) {
-        alert('먼저 비디오 클립을 추가해주세요');
+        useToastStore.getState().show('먼저 비디오 클립을 추가해주세요', 'info');
         setShowTextPanel(false);
         return;
       }
@@ -682,7 +683,7 @@ export const EditorWorkspaceScreen: React.FC = () => {
       const playheadTime = getPlayheadTime();
       const vClips = timelineClips.filter((c) => c.track === 'video');
       if (vClips.length === 0) {
-        alert('먼저 비디오 클립을 추가해주세요');
+        useToastStore.getState().show('먼저 비디오 클립을 추가해주세요', 'info');
         setShowStickerPanel(false);
         return;
       }
@@ -1208,9 +1209,12 @@ export const EditorWorkspaceScreen: React.FC = () => {
           <ExportPanel
             projectName={projectTitle}
             onClose={() => setShowExportPanel(false)}
-            onComplete={() => {
+            onComplete={(mode) => {
               saveProject();
               setShowExportPanel(false);
+              if (mode === 'dashboard') {
+                setCurrentScreen('create');
+              }
             }}
           />
         )}

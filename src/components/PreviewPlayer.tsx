@@ -4,9 +4,10 @@
  *
  * 에디터 상단의 미리보기 영역을 담당합니다.
  * 화면 비율별 표시, 텍스트/스티커 오버레이, 재생 컨트롤을 포함합니다.
+ * 필터 클립 적용 시 CSS filter로 시각적 피드백을 제공합니다.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Pause, Maximize2 } from 'lucide-react';
 import { TimelineItem, Project } from '../types/golf';
@@ -36,6 +37,15 @@ interface PreviewPlayerProps {
   onSelectClip: (clipId: string) => void;
 }
 
+/** 필터 프리셋별 CSS 매핑 */
+const PRESET_FILTERS: Record<string, string> = {
+  vivid: 'brightness(1.1) contrast(1.2) saturate(1.4)',
+  soft: 'brightness(1.05) contrast(0.9) saturate(0.85)',
+  cool: 'hue-rotate(-15deg) saturate(1.1) brightness(0.95)',
+  warm: 'sepia(0.15) saturate(1.3) brightness(1.05)',
+  pro: 'contrast(1.15) saturate(1.1)',
+};
+
 /**
  * 시간을 MM:SS 형식으로 포맷팅
  */
@@ -60,6 +70,64 @@ export const PreviewPlayer: React.FC<PreviewPlayerProps> = ({
   onOverlayPositionChange,
   onSelectClip,
 }) => {
+  /** 현재 시간에 활성화된 필터 클립의 CSS filter 계산 */
+  const activeFilterStyle = useMemo(() => {
+    const filterClip = timelineClips
+      .filter((clip) => clip.track === 'filter')
+      .find(
+        (clip) =>
+          currentTime >= clip.position &&
+          currentTime < clip.position + clip.duration
+      );
+
+    if (!filterClip) return '';
+
+    const b = filterClip.filterBrightness || 0;
+    const c = filterClip.filterContrast || 0;
+    const s = filterClip.filterSaturation || 0;
+    const t = filterClip.filterTemperature || 0;
+
+    // 개별 값이 모두 0이면 프리셋 사용
+    if (b === 0 && c === 0 && s === 0 && t === 0) {
+      return PRESET_FILTERS[filterClip.filterPreset || ''] || '';
+    }
+
+    // 개별 슬라이더 값을 CSS filter로 변환
+    return `brightness(${1 + b / 100}) contrast(${1 + c / 100}) saturate(${1 + s / 100}) hue-rotate(${t * 0.5}deg)`;
+  }, [timelineClips, currentTime]);
+
+  /** 활성 필터 프리셋 이름 (라벨 표시용) */
+  const activeFilterLabel = useMemo(() => {
+    const filterClip = timelineClips
+      .filter((clip) => clip.track === 'filter')
+      .find(
+        (clip) =>
+          currentTime >= clip.position &&
+          currentTime < clip.position + clip.duration
+      );
+
+    if (!filterClip) return null;
+
+    if (filterClip.filterPreset && filterClip.filterPreset !== 'none') {
+      const names: Record<string, string> = {
+        vivid: 'Vivid',
+        soft: 'Soft',
+        cool: 'Cool',
+        warm: 'Warm',
+        pro: 'Pro',
+      };
+      return names[filterClip.filterPreset] || null;
+    }
+
+    const hasCustom =
+      (filterClip.filterBrightness || 0) !== 0 ||
+      (filterClip.filterContrast || 0) !== 0 ||
+      (filterClip.filterSaturation || 0) !== 0 ||
+      (filterClip.filterTemperature || 0) !== 0;
+
+    return hasCustom ? '커스텀' : null;
+  }, [timelineClips, currentTime]);
+
   return (
     <div className="flex-shrink-0 bg-gray-900 relative" style={{ height: '45%' }}>
       <div className="absolute inset-0 flex items-center justify-center p-6">
@@ -73,16 +141,28 @@ export const PreviewPlayer: React.FC<PreviewPlayerProps> = ({
             maxWidth: currentProject.aspectRatio === '9:16' ? '60%' : '95%',
           }}
         >
-          {/* 썸네일 이미지 또는 기본 배경 */}
+          {/* 썸네일 이미지 또는 기본 배경 (필터 CSS 적용) */}
           {currentProject.thumbnail ? (
             <img
               src={currentProject.thumbnail}
               alt="미리보기"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-[filter] duration-300"
+              style={activeFilterStyle ? { filter: activeFilterStyle } : undefined}
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center">
+            <div
+              className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center transition-[filter] duration-300"
+              style={activeFilterStyle ? { filter: activeFilterStyle } : undefined}
+            >
               <Play className="w-16 h-16 text-gray-600" />
+            </div>
+          )}
+
+          {/* 필터 활성 표시 라벨 */}
+          {activeFilterLabel && (
+            <div className="absolute top-3 left-3 px-2 py-0.5 bg-purple-500/80 backdrop-blur-sm rounded text-xs text-white font-medium flex items-center gap-1">
+              <div className="w-1.5 h-1.5 bg-white rounded-full" />
+              {activeFilterLabel}
             </div>
           )}
 

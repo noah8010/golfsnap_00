@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Plus, TrendingUp, Award, Target } from 'lucide-react';
+import { Plus, TrendingUp, Award, Target, Construction } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { useTouchScroll } from '../hooks/useTouchScroll';
 
@@ -22,6 +22,12 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <div className="h-full bg-gradient-to-b from-golf-green to-golf-fairway safe-area-top pb-20">
+      {/* 프로토타입 배너 */}
+      <div className="mx-4 mt-2 px-3 py-2 bg-white/20 backdrop-blur-sm rounded-lg flex items-center gap-2">
+        <Construction className="w-4 h-4 text-white/80 flex-shrink-0" />
+        <span className="text-xs text-white/80">디자인 확정 전 · 레이아웃 목업</span>
+      </div>
+
       {/* 헤더 */}
       <div className="px-6 py-6">
         <motion.h1

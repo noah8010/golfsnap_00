@@ -202,6 +202,62 @@
 
 ---
 
+## 화면 플로우 (수정 시 반드시 참조)
+
+### 전체 화면 흐름
+
+```
+[대시보드(create)] ──새 프로젝트──▶ [비율 선택(Step1)]
+       │                              │
+       │                              ▼
+       │                        [미디어 선택(Step2)]
+       │                              │
+       │                              ▼
+       │                        [AI 처리(Step3)]
+       │                              │
+       │                              ▼
+       └──기존 프로젝트 클릭──▶ [에디터(editor)]
+```
+
+### 내보내기 완료 플로우
+
+```
+[에디터] ──만들기──▶ [설정] ──시작──▶ [렌더링] ──완료──▶ [완료 화면]
+                                       │                  │
+                                       │ 취소              ├─ 공유 → 공유 다이얼로그 → 대시보드(create)
+                                       ▼                  ├─ 다운로드 → 다운로드 완료 → 대시보드(create)
+                                     [설정]               └─ 계속 편집 → 에디터 유지
+```
+
+**핵심 규칙:**
+- 공유 완료 → `onComplete('dashboard')` → `setCurrentScreen('create')` → 대시보드
+- 다운로드 완료 → `onComplete('dashboard')` → `setCurrentScreen('create')` → 대시보드
+- 계속 편집 → `onComplete('continue')` → 패널 닫기 → 에디터 유지
+
+### AI 어시스턴트 메타데이터 흐름
+
+```
+[미디어 선택(Step2)]
+  │ hasMetadata=true인 미디어 선택
+  ▼
+[createNewProject] ← MediaItem.hasMetadata/metadata 확인
+  │ metadata 있는 미디어 → VideoClip(shotData 포함) 생성
+  │ metadata 없는 미디어 → clips: [] (VideoClip 없음)
+  ▼
+[에디터] → currentProject.clips에서 shotData 확인
+  │ shotData 존재 → AI 버튼 활성화 (초록색)
+  │ shotData 없음 → AI 버튼 비활성화 (회색)
+  ▼
+[AI 어시스턴트 패널] ← shotMetadata prop 전달
+```
+
+**핵심 규칙:**
+- AI 버튼은 `currentProject.clips` 중 `shotData`가 있는 클립이 1개 이상일 때만 활성화
+- `createNewProject`에서 `MediaItem.hasMetadata=true`인 미디어를 `VideoClip(shotData)` 로 변환
+- 메타데이터 없는 미디어만 선택된 프로젝트는 AI 기능 사용 불가
+
+---
+
 ## 2. 데이터 모델
 
 ### 2.1 TimelineItem

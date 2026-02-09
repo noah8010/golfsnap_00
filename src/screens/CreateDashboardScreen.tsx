@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserCircle2, MoreVertical, Plus, Copy, Edit2, Trash2, Clock, ChevronLeft, Camera, Upload } from 'lucide-react';
+import { UserCircle2, MoreVertical, Plus, Copy, Edit2, Trash2, Clock, ChevronLeft, Camera, Upload, Film } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { Project } from '../types/golf';
 import { useTouchScroll } from '../hooks/useTouchScroll';
@@ -223,8 +223,14 @@ export const CreateDashboardScreen: React.FC = () => {
         <div className="px-4 py-6 bg-gray-50 dark:bg-gray-900">
           <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">내 프로젝트</h2>
           {filteredProjects.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-400 text-sm">프로젝트가 없습니다</p>
+            <div className="text-center py-12 flex flex-col items-center gap-3">
+              <div className="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                <Film className="w-7 h-7 text-gray-300 dark:text-gray-600" />
+              </div>
+              <div>
+                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">아직 프로젝트가 없습니다</p>
+                <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">위의 &apos;새 프로젝트 시작&apos;을 눌러 시작하세요</p>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4">

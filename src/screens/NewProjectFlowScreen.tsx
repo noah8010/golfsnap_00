@@ -14,6 +14,7 @@ import { NewProjectStep2Screen } from './NewProjectStep2Screen';
 import { NewProjectStep3Screen } from './NewProjectStep3Screen';
 import { ShareDialog } from '../components/ShareDialog';
 import { AspectRatio, MediaItem } from '../types/golf';
+import { useToastStore } from '../store/useToastStore';
 
 interface NewProjectFlowScreenProps {
   onComplete: (aspectRatio: AspectRatio, selectedMedia: MediaItem[]) => void;
@@ -79,7 +80,7 @@ export const NewProjectFlowScreen: React.FC<NewProjectFlowScreenProps> = ({
   const handleShareSubmit = (title: string, content: string) => {
     // 공유 모드에서 제목/내용 입력 완료
     console.log('공유하기:', { title, content, aspectRatio, selectedMedia });
-    alert(`제목: ${title}\n내용: ${content}\n\n공유 기능은 곧 구현됩니다`);
+    useToastStore.getState().show('공유가 완료되었습니다', 'success');
     setShowShareDialog(false);
     onClose();
   };

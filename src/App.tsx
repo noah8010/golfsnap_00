@@ -39,7 +39,7 @@ import { CreateDashboardScreen } from './screens/CreateDashboardScreen';
 import { NewProjectFlowScreen } from './screens/NewProjectFlowScreen';
 import { EditorWorkspaceScreen } from './screens/EditorWorkspaceScreen';
 import { ShotsScreen } from './screens/ShotsScreen';
-import { EditorScreen } from './screens/EditorScreen';
+import { BookingScreen } from './screens/BookingScreen';
 import { PreviewScreen } from './screens/PreviewScreen';
 import { useAppStore } from './store/useAppStore';
 import { useTheme } from './hooks/useTheme';
@@ -138,11 +138,11 @@ const App: React.FC = () => {
    * 나머지 탭(home, explore, booking, profile)은 향후 개발 예정
    */
   const screens = {
-    home: HomeScreen,               // TODO: 홈 화면 개발
-    explore: ShotsScreen,           // TODO: 샷 탐색 화면 개발
-    create: CreateDashboardScreen,  // ✅ 프로젝트 대시보드 (완성)
-    booking: EditorScreen,          // TODO: 예약 화면 개발
-    profile: PreviewScreen,         // TODO: 프로필 화면 개발
+    home: HomeScreen,               // 홈 화면 (레이아웃 목업)
+    explore: ShotsScreen,           // 샷 탐색 (레이아웃 목업)
+    create: CreateDashboardScreen,  // 프로젝트 대시보드 (핵심 프로토타입)
+    booking: BookingScreen,         // 예약 화면 (레이아웃 목업)
+    profile: PreviewScreen,         // 프로필 화면 (레이아웃 목업)
   };
 
   // 현재 화면에 해당하는 컴포넌트 (기본값: CreateDashboardScreen)

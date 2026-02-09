@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Settings, Share2, Trophy, TrendingUp } from 'lucide-react';
+import { Settings, Share2, Trophy, TrendingUp, Construction } from 'lucide-react';
 import { useTouchScroll } from '../hooks/useTouchScroll';
 
 export const PreviewScreen: React.FC = () => {
@@ -19,6 +19,12 @@ export const PreviewScreen: React.FC = () => {
 
   return (
     <div ref={scrollRef} className="h-full bg-gray-50 safe-area-top pb-20 overflow-y-auto scrollbar-hide touch-scroll">
+      {/* 프로토타입 배너 */}
+      <div className="mx-4 mt-2 px-3 py-2 bg-white/20 backdrop-blur-sm rounded-lg flex items-center gap-2">
+        <Construction className="w-4 h-4 text-white/80 flex-shrink-0" />
+        <span className="text-xs text-white/80">디자인 확정 전 · 레이아웃 목업</span>
+      </div>
+
       {/* 프로필 헤더 */}
       <div className="bg-gradient-to-br from-golf-green to-golf-fairway px-6 py-8">
         <div className="flex items-start justify-between mb-6">

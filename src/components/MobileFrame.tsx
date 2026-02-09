@@ -1,4 +1,5 @@
 import React from 'react';
+import { Toast } from './Toast';
 
 interface MobileFrameProps {
   children: React.ReactNode;
@@ -27,8 +28,9 @@ export const MobileFrame: React.FC<MobileFrameProps> = ({ children }) => {
             </div>
 
             {/* 앱 콘텐츠 */}
-            <div className="h-full overflow-hidden">
+            <div className="relative h-full overflow-hidden">
               {children}
+              <Toast />
             </div>
           </div>
 

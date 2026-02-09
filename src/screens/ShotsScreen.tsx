@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, Search, Calendar } from 'lucide-react';
+import { Filter, Search, Calendar, Construction } from 'lucide-react';
 import { ShotData, ClubType } from '../types/golf';
 import { useTouchScroll } from '../hooks/useTouchScroll';
 
@@ -55,6 +55,12 @@ export const ShotsScreen: React.FC = () => {
 
   return (
     <div className="h-full bg-gray-50 safe-area-top pb-20">
+      {/* 프로토타입 배너 */}
+      <div className="mx-4 mt-2 mb-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
+        <Construction className="w-4 h-4 text-amber-600 flex-shrink-0" />
+        <span className="text-xs text-amber-700">디자인 확정 전 · 레이아웃 목업</span>
+      </div>
+
       {/* 헤더 */}
       <div className="bg-white px-6 py-4 border-b border-gray-200">
         <h1 className="text-2xl font-bold text-gray-900 mb-4">내 샷 기록</h1>

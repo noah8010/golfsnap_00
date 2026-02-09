@@ -479,6 +479,16 @@ export interface MediaItem {
 
   /** 세로 해상도 (px) */
   height: number;
+
+  /** 스윙 분석 메타데이터 보유 여부 */
+  hasMetadata?: boolean;
+
+  /** 스윙 분석 메타데이터 (hasMetadata=true일 때만 존재) */
+  metadata?: {
+    clubType?: string;
+    swingSpeed?: number;
+    location?: string;
+  };
 }
 
 /**
