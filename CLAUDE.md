@@ -44,6 +44,9 @@ Lucide React (아이콘)
 | **기능 가이드** | `docs/FEATURE_GUIDE.md` | 기능 명세 및 API 레퍼런스 |
 | **프로젝트 현황** | `docs/PROJECT_STATUS.md` | 완성도, 남은 작업 |
 | **TODO** | `docs/TODO.md` | 우선순위별 작업 목록 |
+| **페이지 명세** | `docs/PAGE_SPECIFICATION.md` | 전체 페이지 기능 명세 |
+| **개발 보충 기획** | `docs/DEVELOPMENT_REQUIREMENTS.md` | 실 서비스 개발 보충 기획서 |
+| **Spec Viewer** | `spec-viewer.html` | 페이지별 인터랙티브 명세 뷰어 |
 
 ---
 
@@ -60,6 +63,7 @@ Lucide React (아이콘)
 ```
 src/
 ├── App.tsx                     # 라우팅 (수정 주의)
+├── spec-viewer-entry.tsx       # Spec Viewer 엔트리포인트
 ├── types/golf.ts               # 타입 정의 (수정 시 전파 영향 큼)
 ├── store/useAppStore.ts        # 전역 상태 (수정 시 주의)
 ├── store/useHistoryStore.ts    # Undo/Redo 히스토리
@@ -68,6 +72,11 @@ src/
 ├── hooks/useTimeline.ts        # 타임라인 핵심 로직 (복잡)
 ├── hooks/useSmartAssistant.ts  # AI 어시스턴트 훅
 └── screens/EditorWorkspaceScreen.tsx  # 에디터 메인 (가장 복잡)
+
+docs/files/
+├── _index.md                   # 파일 구조 인덱스
+├── p{1~6}-*.md                 # 페이지별 기능 명세
+└── p{1~6}-*-spec-viewer.jsx    # 페이지별 인터랙티브 뷰어
 ```
 
 ### 4.3 5개 트랙 구조 (변경 금지)

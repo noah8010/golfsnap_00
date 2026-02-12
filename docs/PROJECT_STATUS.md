@@ -1,6 +1,6 @@
 # GolfSnap Mobile - 프로젝트 현황
 
-> **최종 업데이트**: 2026-02-09
+> **최종 업데이트**: 2026-02-11
 > **완성도**: 99%
 
 ---
@@ -73,6 +73,22 @@ React 18 + TypeScript 5 + Vite 5 + Zustand + Tailwind CSS + Framer Motion
 
 ---
 
+## 페이지별 기능 명세 뷰어 (Spec Viewer)
+
+페이지별 기능 명세를 와이어프레임과 함께 인터랙티브하게 확인할 수 있는 뷰어입니다.
+
+| 항목 | 내용 |
+|------|------|
+| 접속 주소 | http://localhost:3000/golfsnap_00/spec-viewer.html |
+| 엔트리 파일 | `spec-viewer.html` + `src/spec-viewer-entry.tsx` |
+| 뷰어 파일 | `docs/files/p{1~6}-*-spec-viewer.jsx` (6개) |
+
+```bash
+npm run dev  # 개발 서버 실행 후 위 주소로 접속
+```
+
+---
+
 ## 명령어
 
 ```bash
@@ -91,6 +107,9 @@ npm run build   # 프로덕션 빌드
 | [STYLE_GUIDE.md](./STYLE_GUIDE.md) | 코딩 규칙 + 디자인 시스템 |
 | [FEATURE_GUIDE.md](./FEATURE_GUIDE.md) | 기능 명세 및 API 레퍼런스 |
 | [TODO.md](./TODO.md) | 작업 목록 |
+| [PAGE_SPECIFICATION.md](./PAGE_SPECIFICATION.md) | 전체 페이지 기능 명세 |
+| [DEVELOPMENT_REQUIREMENTS.md](./DEVELOPMENT_REQUIREMENTS.md) | 실 서비스 개발 보충 기획서 |
+| [files/](./files/) | 모듈화된 페이지별 명세 + Spec Viewer |
 
 ---
 

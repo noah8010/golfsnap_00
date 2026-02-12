@@ -1,11 +1,20 @@
 # TODO - 작업 목록
 
-> **최종 업데이트**: 2026-02-09
+> **최종 업데이트**: 2026-02-11
 > **관련 문서**: [../CLAUDE.md](../CLAUDE.md) | [STYLE_GUIDE.md](./STYLE_GUIDE.md) | [FEATURE_GUIDE.md](./FEATURE_GUIDE.md)
 
 ---
 
-## 최근 완료 (2026-02-09)
+## 최근 완료 (2026-02-11)
+
+| 기능 | 상세 |
+|------|------|
+| 실 서비스 개발 보충 기획서 | `docs/DEVELOPMENT_REQUIREMENTS.md` — 인증, 미디어 업로드, 렌더링, 공유, 디자인 시스템 등 13개 섹션 |
+| 페이지별 기능 명세서 모듈화 | `docs/files/` — P1~P6 페이지별 MD 파일 분리 |
+| Spec Viewer P1~P6 생성 | `docs/files/p{1~6}-*-spec-viewer.jsx` — 3패널 인터랙티브 뷰어 (와이어프레임 + 어노테이션 + 디스크립션) |
+| Spec Viewer 통합 페이지 | `spec-viewer.html` + `src/spec-viewer-entry.tsx` — Vite 멀티페이지, P1~P6 탭 전환 |
+
+## 이전 완료 (2026-02-09)
 
 | 기능 | 상세 |
 |------|------|
